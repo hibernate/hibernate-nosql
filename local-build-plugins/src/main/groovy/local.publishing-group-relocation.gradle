@@ -1,0 +1,43 @@
+
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+plugins {
+    id "local.publishing"
+}
+
+def oldGroupId = "org.hibernate"
+
+var publishingExtension = project.getExtensions().getByType(PublishingExtension) as PublishingExtension
+publishingExtension.publications.create("groupRelocation", MavenPublication) {
+    groupId = oldGroupId
+    artifactId = project.name
+
+    pom {
+        name = "Relocation : ${oldGroupId}:${project.name} -> ${project.group}:${project.name}"
+        description = "The `${project.name}` module has been relocated to the `${project.group}` group"
+
+        distributionManagement {
+            relocation {
+                groupId = project.group
+                artifactId = project.name
+                version = project.version
+            }
+        }
+    }
+}
+
+// this should to stay, even if the publishing of
+// relocation artifacts gets stopped at some point
+// it ensures for Gradle consumers that you do not have
+// a pre-relocation artifact and a post-relocation artifact
+// in the same resolvable configuration
+configurations
+        .matching { it.name in ['apiElements', 'runtimeElements'] }
+        .configureEach {
+            outgoing {
+                capability("$project.group:$project.name:$project.version")
+                capability("$oldGroupId:$project.name:$project.version")
+            }
+        }

@@ -1,0 +1,13 @@
+:version: 1.0
+= What's New in {version}
+:toc2:
+:sectanchors:
+:toclevels: 4
+:docsBase: https://docs.jboss.org/hibernate/nosql
+:versionDocBase: {docsBase}/{version}
+:userGuideBase: {versionDocBase}/userguide/html_single/Hibernate_User_Guide.html
+:migrationGuide: {versionDocBase}/migration-guide/migration-guide.html
+
+Describes the new features and capabilities added to Hibernate NoSQL in {version}.
+
+IMPORTANT: If migrating from earlier versions, be sure to also check out the link:{migrationGuide}[Migration Guide] for discussion of impactful changes.

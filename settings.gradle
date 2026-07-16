@@ -1,0 +1,131 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        maven {
+            name = 'localPluginRepository'
+            url = uri( "${gradle.gradleUserHomeDir}/tmp/plugins" )
+        }
+    }
+
+    includeBuild 'local-build-plugins'
+
+}
+
+plugins {
+    id 'org.hibernate.orm.build.env-settings'
+    id 'org.hibernate.orm.build.jdks-settings'
+    id 'com.gradle.develocity' version '4.5.0'
+    id 'com.gradle.common-custom-user-data-gradle-plugin' version '2.7.0'
+}
+
+dependencyResolutionManagement {
+    repositories {
+        // See MAINTAINERS.md for documentation.
+        org.hibernate.orm.env.Repositories.maybeAddMavenLocal(it)
+        mavenCentral()
+        org.hibernate.orm.env.Repositories.maybeAddMavenCentralSnapshots(it) { content ->
+            content.includeGroup "jakarta.persistence"
+        }
+
+        //Allow loading additional dependencies from a local path;
+        //useful to load JDBC drivers which can not be distributed in public.
+        if (System.env['ADDITIONAL_REPO'] != null) {
+            flatDir {
+                dirs "${System.env.ADDITIONAL_REPO}"
+            }
+        }
+    }
+
+    pluginManagement {
+        repositories {
+            gradlePluginPortal()
+        }
+    }
+
+    dependencyResolutionManagement {
+        versionCatalogs {
+            jdks {
+                // see gradle.properties (or set with -D/-P)
+                var String baseJdk = jdkVersions.baseline
+                var String minJdk = jdkVersions.min
+                var String maxJdk = jdkVersions.max
+
+                version "baseline", baseJdk
+                version "compatible", "17 or 21"
+                version "jdbc", "4.2" // Bundled with JDK 11
+
+                // We may require a minimum JDK version, for consistency across builds
+                version "minSupportedJdk", minJdk
+                // Gradle does bytecode transformation on tests.
+                // You can't use bytecode higher than what Gradle supports, even with toolchains.
+                version "maxSupportedBytecode", maxJdk
+            }
+            libs {
+                def overrideableVersion = { String settingName, String versionName ->
+                    String overridden = settings.ext.find(settingName)
+                    if (overridden != null) {
+                        version(versionName, overridden)
+                    }
+                }
+
+                ///////////////////////////////////////////////////////////////////
+                // `jakartaJpaVersion` comes from the local-build-plugins
+                // to allow for command-line overriding of the JPA version to use
+                // TODO : The org.hibernate.build.JpaVersion plugin is always overriding
+                //  the dependency (effectively igoring the version in the TOML catalog).
+                //  We should really read the version from the gradle project in the plugin instead.
+                // version("jpa", "${jakartaJpaVersion}")
+                overrideableVersion("gradle.libs.versions.jpa", "jpa")
+                ///////////////////////////////////////////////////////////////////
+                overrideableVersion("gradle.libs.versions.h2", "h2")
+                overrideableVersion("gradle.libs.versions.derby", "derby")
+                overrideableVersion("gradle.libs.versions.h2gis", "h2gis")
+                overrideableVersion("gradle.libs.versions.hsqldb", "hsqldb")
+                overrideableVersion("gradle.libs.versions.persistenceTck", "persistenceTck")
+            }
+        }
+    }
+}
+
+rootProject.name = 'hibernate-nosql'
+
+apply from: file( 'gradle/gradle-develocity.gradle' )
+
+if ( !JavaVersion.current().java11Compatible ) {
+    throw new GradleException( "Gradle must be run with Java 11 or later" )
+}
+
+buildCache {
+    local {
+        // do not use local build cache for CI jobs, period!
+        enabled = !settings.ext.isCiEnvironment
+    }
+    remote(develocity.buildCache) {
+        enabled = settings.ext.useRemoteCache
+        // Check access key presence to avoid build cache errors on PR builds when access key is not present
+        def accessKey = System.getenv("DEVELOCITY_ACCESS_KEY")
+        push = settings.ext.populateRemoteBuildCache && accessKey
+    }
+}
+
+include 'hibernate-nosql-core'
+include 'hibernate-milvus'
+include 'hibernate-neo4j'
+
+include 'hibernate-platform'
+
+include 'release'
+
+rootProject.children.each { project ->
+    project.buildFileName = "${project.name}.gradle"
+    assert project.projectDir.isDirectory()
+    assert project.buildFile.exists()
+    assert project.buildFile.isFile()
+}
+include 'hibernate-platform'

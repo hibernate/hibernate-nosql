@@ -1,0 +1,96 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+plugins {
+	id "java-gradle-plugin"
+	id 'groovy-gradle-plugin'
+    alias(libs.plugins.spotless)
+}
+
+repositories {
+	mavenCentral()
+}
+
+group = 'org.hibernate.build'
+version = '1.0.0-SNAPSHOT'
+layout.buildDirectory.set(file("target"))
+
+dependencies {
+	implementation gradleApi()
+
+	implementation libs.jakarta.inject
+
+    implementation libs.jakarta.jaxbXjc
+    implementation libs.jakarta.basicjaxbTools
+    implementation libs.jakarta.basicjaxbPlugins
+
+    implementation libs.jakarta.jsonApi
+    implementation libs.jakarta.jsonBind
+    implementation libs.jakarta.yasson
+    implementation libs.buildscript.jsoup
+
+	implementation libs.buildscript.forbiddenapis
+    implementation libs.buildscript.slf4jSimple
+}
+
+tasks.compileJava {
+	options.encoding = 'UTF-8'
+	sourceCompatibility = 11
+	targetCompatibility = 11
+}
+
+gradlePlugin {
+	plugins {
+		databaseServicePlugin {
+			id = 'org.hibernate.orm.database-service'
+			implementationClass = 'org.hibernate.orm.db.DatabaseServicePlugin'
+		}
+		antlrPlugin {
+			id = 'org.hibernate.orm.antlr'
+			implementationClass = 'org.hibernate.orm.antlr.AntlrPlugin'
+		}
+		envSettings {
+			id = 'org.hibernate.orm.build.env-settings'
+			implementationClass = 'org.hibernate.orm.env.EnvironmentSettingsPlugin'
+		}
+		jdkVersionSettings {
+			id = 'org.hibernate.orm.build.jdks-settings'
+			implementationClass = 'org.hibernate.orm.toolchains.JdkVersionSettingsPlugin'
+		}
+		settingsDocumentationPlugin {
+			id = 'org.hibernate.orm.build.settings-doc'
+			implementationClass = 'org.hibernate.orm.properties.SettingsDocumentationPlugin'
+		}
+		jdkVersionsPlugin {
+			id = 'org.hibernate.orm.build.jdks'
+			implementationClass = 'org.hibernate.orm.toolchains.JdkVersionPlugin'
+		}
+		javaModulePlugin {
+			id = 'org.hibernate.orm.build.java-module'
+			implementationClass = 'org.hibernate.orm.toolchains.JavaModulePlugin'
+		}
+		register( "xjc-plugin" ) {
+			id = "local-xjc-plugin"
+			implementationClass = "org.hibernate.build.xjc.XjcPlugin"
+		}
+		register("aspect-module") {
+			id = "local.module"
+			implementationClass = "org.hibernate.build.aspects.ModuleAspect"
+		}
+	}
+}
+
+spotless {
+	//Don't fail during the check: rather than enforcing guidelines, we use this plugin to fix mistakes automatically.
+	enforceCheck = false
+	java {
+		targetExclude( "**/target/**/*.java" )
+		licenseHeaderFile project.file("../shared/config/spotless/license.java")
+		removeUnusedImports()
+		leadingSpacesToTabs( 4 )
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
+}
+tasks.compileJava.dependsOn tasks.spotlessJavaApply

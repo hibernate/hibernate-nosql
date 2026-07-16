@@ -1,0 +1,33 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+
+plugins {
+    id "local.publishing-java-module"
+}
+
+description = 'Hibernate\'s core NoSQL integration'
+
+dependencies {
+    api libs.hibernate.core
+    api libs.jakarta.jnosql
+    implementation libs.hibernate.models
+    // needed to generate adapters for JNoSQL AttributeConverter
+    implementation libs.hibernate.byteBuddy
+
+    testImplementation libs.hibernate.testing
+    testImplementation libs.hibernate.models.jandex
+//    testImplementation project( path: ':hibernate-core', configuration: 'tests' )
+
+    if ( db.startsWith( 'neo4j' ) ) {
+        testRuntimeOnly project(':hibernate-neo4j')
+    }
+    else if ( db.startsWith( 'milvus' ) ) {
+        testRuntimeOnly project(':hibernate-milvus')
+    }
+}
+
+test {
+    include '**/**'
+}

@@ -1,0 +1,49 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+
+ext {
+    // this `db` property is defined in gradle.properties and so we assume it is always available
+    assert project.hasProperty('db')
+    db = project.getProperty('db')
+    dbVersion = project.getProperty('dbVersion')
+    dbHost = System.getProperty( 'dbHost', 'localhost' )
+    dbService = System.getProperty( 'dbService', '' )
+    dbPassword = System.getProperty( 'dbPassword', '' ).replace('"', '')
+    dbConnectionStringSuffix = System.getProperty( 'dbConnectionStringSuffix', '' ).replace('"', '')
+    runID = System.getProperty( 'runID', '' )
+
+    dbBundle = [
+            h2 : [
+                    'db.dialect' : 'org.hibernate.dialect.H2Dialect',
+                    'jdbc.driver': 'org.h2.Driver',
+                    'jdbc.user'  : 'sa',
+                    'jdbc.pass'  : '',
+                    'jdbc.url'   : 'jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE',
+                    'jdbc.datasource' : 'org.h2.Driver',
+//                        'jdbc.datasource' : 'org.h2.jdbcx.JdbcDataSource',
+                    'connection.init_sql' : '',
+                    'hibernate.dialect.native_param_markers' : 'true'
+            ],
+            neo4j : [
+                    'db.dialect' : 'org.hibernate.neo4j.Neo4jDialect',
+                    'jdbc.driver': 'org.neo4j.jdbc.Neo4jDriver',
+                    'jdbc.user'  : 'neo4j',
+                    'jdbc.pass'  : 'hibernate_orm_test',
+                    'jdbc.url'   : 'jdbc:neo4j://' + dbHost + ':7687',
+                    'jdbc.datasource' : 'org.neo4j.jdbc.Neo4jDriver',
+                    'connection.init_sql' : ''
+            ],
+            milvus : [
+                    'db.dialect' : 'org.hibernate.milvus.MilvusDialect',
+                    'jdbc.driver': 'org.hibernate.milvus.jdbc.internal.MilvusDriver',
+                    'jdbc.user'  : 'sa',
+                    'jdbc.pass'  : '',
+                    'jdbc.url'   : 'jdbc:milvus://' + dbHost + '/default',
+                    'jdbc.datasource' : 'org.hibernate.milvus.jdbc.internal.MilvusDriver',
+                    'connection.init_sql' : '',
+                    'hibernate.dialect.native_param_markers' : 'true'
+            ],
+    ]
+}

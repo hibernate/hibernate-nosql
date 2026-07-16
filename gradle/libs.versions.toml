@@ -1,0 +1,243 @@
+[versions]
+
+# Main Libs
+hibernate = "7.4.5.Final"
+hibernateModels = "1.1.1"
+byteBuddy = "1.17.7"
+jbossLogging = "3.6.3.Final"
+jbossLoggingTool = "3.0.4.Final"
+
+# Jakarta Libs
+jpa = "3.2.0" # Can be replaced with ${jakartaJpaVersion} / gradle.libs.versions.jpa
+annotation = "3.0.0"
+cdi = "5.0.0.Beta1"
+inject = "2.0.1"
+interceptors = "2.2.0"
+concurrency = "3.2.0-M2"
+data = "1.1.0-M3"
+jacc = "3.0.0"
+jaxbApi = "4.0.5"
+jaxbRuntime = "4.0.9"
+jsonbApi = "3.0.1"
+jsonbRuntime = "3.0.4"
+jta = "2.0.1"
+validation = "3.1.1"
+basicjaxb = "3.0.0"
+jakarta-json-bind = "2.0.0"
+jakarta-json-api = "2.0.2"
+yasson = "2.0.4"
+ejb =  "4.0.1"
+jnosql = "1.0.0"
+
+# Test Libs
+junitJupiter = "6.0.3"
+junit4 = "4.13.2"
+test-junit4 = "4.13.2"
+junitJupiterLauncher = "6.0.3"
+junitJupiterPlatformGradlePlugin = "1.0.3"
+assertj = "3.26.3"
+hamcrest = "3.0"
+byteman = "4.0.27"
+jbossJta = "7.3.4.Final"
+jbossTxSpi = "8.0.0.Final"
+log4j = "2.26.1"
+logBackClassic = "1.5.38"
+mockito = "5.23.0"
+shrinkwrap = "1.2.6"
+shrinkwrapDescriptors = "2.0.0"
+weld = "6.0.4.Final"
+weldJunit = "6.0.0.Beta1"
+wildFlyTxnClient = "3.0.5.Final"
+hibernateValidator = "9.1.2.Final"
+jaxen = "2.0.6"
+xerces = "2.12.2"
+dom4j = "2.2.0"
+javaxMoney = "1.1"
+moneta = "1.4.5"
+persistenceTck="4.0.0-SNAPSHOT"
+dataTck = "1.1.0-SNAPSHOT"
+dataTckArquillian = "1.9.2.Final"
+dataTckShrinkwrap = "1.2.6"
+dataTckServlet = "6.1.0"
+dataTckNosql = "1.0.0-b7"
+sigtest = "2.3"
+
+# JDBC Libs
+h2 = "2.4.240"
+neo4j = "6.5.0"
+milvus2_6 = "2.6.20"
+milvus3_0 = "3.0.4"
+
+#Buildscript
+forbiddenapis = "3.10"
+jsoup = "1.22.2"
+slf4j = "2.0.18"
+
+# Asciidocs
+hibernate-asciidoctor-theme = "6.1.3.Final"
+hibernate-extensions = "3.2.1.Final"
+asciidoctorj = "3.0.0"
+
+# Compilation (static checks)
+jetbrainsAnnotations = "26.1.0"
+errorprone = "2.50.0"
+nullaway = "0.13.7"
+## For custom NullAway LibraryModels
+guava = "33.6.0-jre"
+
+# Plugins
+develocity = "4.5.0"
+customUserData = "2.7.0"
+asciidoctor = "4.0.5"
+spotless = "8.8.0"
+errorpronePlugin = "5.1.0"
+nullawayPlugin = "3.1.0"
+pluginPublish = "2.1.1"
+kotlin = "2.4.10"
+mavenPluginDev = "1.0.3"
+hibernateBuild = "2.3.0"
+bnd = "7.3.0"
+nexusPublish = "2.0.0"
+ideaExt = "1.4.1"
+taskTree = "4.0.1"
+
+
+[libraries]
+# Libs
+hibernate-bom = { group = "org.hibernate.orm", name = "hibernate-platform", version.ref = "hibernate" }
+
+hibernate-models = { group = "org.hibernate.models", name = "hibernate-models" }
+hibernate-models-jandex = { group = "org.hibernate.models", name = "hibernate-models-jandex", version.ref = "hibernateModels" }
+hibernate-core = { group = "org.hibernate.orm", name = "hibernate-core" }
+hibernate-vector = { group = "org.hibernate.orm", name = "hibernate-vector" }
+hibernate-testing = { group = "org.hibernate.orm", name = "hibernate-testing" }
+hibernate-byteBuddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "byteBuddy" }
+hibernate-byteBuddyAgent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "byteBuddy" }
+
+logging = { group = "org.jboss.logging", name = "jboss-logging", version.ref = "jbossLogging" }
+loggingAnnotations = { group = "org.jboss.logging", name = "jboss-logging-annotations", version.ref = "jbossLoggingTool" }
+loggingProcessor = { group = "org.jboss.logging", name = "jboss-logging-processor", version.ref = "jbossLoggingTool" }
+
+# Compilation (static checks)
+compilation-jetbrainsAnnotations = { group = "org.jetbrains", name = "annotations", version.ref = "jetbrainsAnnotations" }
+compilation-errorprone = { group = "com.google.errorprone", name = "error_prone_core", version.ref = "errorprone" }
+compilation-nullaway = { group = "com.uber.nullaway", name = "nullaway", version.ref = "nullaway" }
+## For custom NullAway LibraryModels
+compilation-guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+
+# Jakarta
+jakarta-jpa = { group = "jakarta.persistence", name = "jakarta.persistence-api", version.ref = "jpa" }
+jakarta-jta = { group = "jakarta.transaction", name = "jakarta.transaction-api", version.ref = "jta" }
+jakarta-validation = { group = "jakarta.validation", name = "jakarta.validation-api", version.ref = "validation" }
+jakarta-jacc = { group = "jakarta.authorization", name = "jakarta.authorization-api", version.ref = "jacc" }
+jakarta-cdi = { group = "jakarta.cdi", name = "jakarta.cdi-api", version.ref = "cdi" }
+jakarta-annotation = { group = "jakarta.annotation", name = "jakarta.annotation-api", version.ref = "annotation" }
+jakarta-interceptors = { group = "jakarta.interceptor", name = "jakarta.interceptor-api", version.ref = "interceptors" }
+jakarta-concurrency = { group = "jakarta.concurrency", name = "jakarta.concurrency-api", version.ref = "concurrency" }
+jakarta-data = { group = "jakarta.data", name = "jakarta.data-api", version.ref = "data" }
+jakarta-dataStateful = { group = "jakarta.data", name = "jakarta.data.stateful-api", version.ref = "data" }
+jakarta-jsonbApi = { group = "jakarta.json.bind", name = "jakarta.json.bind-api", version.ref = "jsonbApi" }
+jakarta-jsonb = { group = "org.eclipse", name = "yasson", version.ref = "jsonbRuntime" }
+jakarta-inject = { group = "jakarta.inject", name = "jakarta.inject-api", version.ref = "inject" }
+jakarta-jaxbApi = { group = "jakarta.xml.bind", name = "jakarta.xml.bind-api", version.ref = "jaxbApi" }
+jakarta-jaxb = { group = "org.glassfish.jaxb", name = "jaxb-runtime", version.ref = "jaxbRuntime" }
+jakarta-jaxbXjc = { group = "org.glassfish.jaxb", name = "jaxb-xjc", version.ref = "jaxbRuntime" }
+jakarta-basicjaxbTools = { group = "org.patrodyne.jvnet", name = "hisrc-basicjaxb-tools", version.ref = "basicjaxb" }
+jakarta-basicjaxbPlugins = { group = "org.patrodyne.jvnet", name = "hisrc-basicjaxb-plugins", version.ref = "basicjaxb" }
+jakarta-jsonBind = { group = "jakarta.json.bind", name = "jakarta.json.bind-api", version.ref = "jakarta-json-bind" }
+jakarta-jsonApi = { group = "jakarta.json", name = "jakarta.json-api", version.ref = "jakarta-json-api" }
+jakarta-yasson = { group = "org.eclipse", name = "yasson", version.ref = "yasson" }
+jakarta-ejb = { group = "jakarta.ejb", name = "jakarta.ejb-api", version.ref = "ejb" }
+jakarta-jnosql = { group = "jakarta.nosql", name = "jakarta.nosql-api", version.ref = "jnosql" }
+
+# Test Libs
+test-validator = { group = "org.hibernate.validator", name = "hibernate-validator", version.ref = "hibernateValidator" }
+test-junitJupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitJupiter" }
+test-junitJupiterApi = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junitJupiter" }
+test-junitJupiterEngine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junitJupiter" }
+test-junitJupiterParams = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junitJupiter" }
+test-junit4Engine = { group = "org.junit.vintage", name = "junit-vintage-engine", version.ref = "junitJupiter" }
+test-junitJupiterLauncher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junitJupiterLauncher" }
+test-junitJupiterSuiteEngine = { group = "org.junit.platform", name = "junit-platform-suite-engine", version.ref = "junitJupiterLauncher" }
+test-junitJupiterPlatformGradlePlugin = { group = "org.junit.platform", name = "junit-platform-gradle-plugin", version.ref = "junitJupiterPlatformGradlePlugin" }
+test-junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
+test-assertjCore = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
+test-assertjApi = { group = "org.assertj", name = "assertj-core-api", version.ref = "assertj" }
+test-hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
+test-log4j2 = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4j" }
+test-logbackClassic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logBackClassic" }
+test-shrinkwrap = { group = "org.jboss.shrinkwrap", name = "shrinkwrap-impl-base", version.ref = "shrinkwrap" }
+test-shrinkwrapDescriptors = { group = "org.jboss.shrinkwrap.descriptors", name = "shrinkwrap-descriptors-impl-javaee", version.ref = "shrinkwrapDescriptors" }
+test-bytemanBmunit = { group = "org.jboss.byteman", name = "byteman-bmunit", version.ref = "byteman" }
+test-mockito = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
+test-mockitoJunitJupiter = { group = "org.mockito", name = "mockito-junit-jupiter", version.ref = "mockito" }
+test-jbossJta = { group = "org.jboss.narayana.jta", name = "narayana-jta", version.ref = "jbossJta" }
+test-jbossTxSpi = { group = "org.jboss", name = "jboss-transaction-spi", version.ref = "jbossTxSpi" }
+test-wildFlyTxnClient = { group = "org.wildfly.transaction", name = "wildfly-transaction-client", version.ref = "wildFlyTxnClient" }
+test-weld = { group = "org.jboss.weld.se", name = "weld-se-shaded", version.ref = "weld" }
+test-jaxen = { group = "jaxen", name = "jaxen", version.ref = "jaxen" }
+test-xerces = { group = "xerces", name = "xercesImpl", version.ref = "xerces" }
+test-dom4j = { group = "org.dom4j", name = "dom4j", version.ref = "dom4j" }
+test-javaxMoney = { group = "javax.money", name = "money-api", version.ref = "javaxMoney" }
+test-moneta = { group = "org.javamoney.moneta", name = "moneta-core", version.ref = "moneta" }
+test-jakartaPersistenceTckTests = { group = "jakarta.persistence", name = "persistence-tck-spec-tests", version.ref = "persistenceTck" }
+test-jakartaDataTck = { group = "jakarta.data", name = "jakarta.data-tck", version.ref = "dataTck" }
+test-jakartaDataApi = { group = "jakarta.data", name = "jakarta.data-api", version.ref = "dataTck" }
+test-jakartaDataStatefulApi = { group = "jakarta.data", name = "jakarta.data.stateful-api", version.ref = "dataTck" }
+test-weldJunit = { group = "org.jboss.weld", name = "weld-junit-jupiter", version.ref = "weldJunit" }
+test-sigtest = { group = "jakarta.tck", name = "sigtest-maven-plugin", version.ref = "sigtest" }
+test-dataTckArquillianCore = { group = "org.jboss.arquillian.junit5", name = "arquillian-junit5-core", version.ref = "dataTckArquillian" }
+test-dataTckArquillianContainerApi = { group = "org.jboss.arquillian.container", name = "arquillian-container-test-api", version.ref = "dataTckArquillian" }
+test-dataTckShrinkwrapApi = { group = "org.jboss.shrinkwrap", name = "shrinkwrap-api", version.ref = "dataTckShrinkwrap" }
+test-dataTckServletApi = { group = "jakarta.servlet", name = "jakarta.servlet-api", version.ref = "dataTckServlet" }
+test-dataTckNosqlApi = { group = "jakarta.nosql", name = "nosql-core", version.ref = "dataTckNosql" }
+
+
+# JDBC
+jdbc-h2 = { group = "com.h2database", name = "h2", version.ref = "h2" }
+jdbc-neo4j = { group = "org.neo4j", name = "neo4j-jdbc-full-bundle", version.ref = "neo4j" }
+jdbc-milvus26 = { group = "io.milvus", name = "milvus-sdk-java-bulkwriter", version.ref = "milvus2_6" }
+jdbc-milvus30 = { group = "io.milvus", name = "milvus-sdk-java-bulkwriter", version.ref = "milvus3_0" }
+
+# Buildscript
+buildscript-forbiddenapis = { group = "de.thetaphi", name = "forbiddenapis", version.ref = "forbiddenapis" }
+buildscript-jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+buildscript-slf4jSimple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
+
+asciidoctor-hibernateTheme = { group = "org.hibernate.infra", name = "hibernate-asciidoctor-theme", version.ref = "hibernate-asciidoctor-theme" }
+asciidoctor-hibernateExtensions = { group = "org.hibernate.infra", name = "hibernate-asciidoctor-extensions", version.ref = "hibernate-extensions" }
+asciidoctor-asciidoctorj = { group = "org.asciidoctor", name = "asciidoctorj", version.ref = "asciidoctorj" }
+
+[plugins]
+develocity = { id = "com.gradle.develocity", version.ref = "develocity" }
+customUserData = { id = "com.gradle.common-custom-user-data-gradle-plugin", version.ref = "customUserData" }
+asciidoctor-convert = { id = "org.asciidoctor.jvm.convert", version.ref = "asciidoctor" }
+asciidoctor-pdf = { id = "org.asciidoctor.jvm.pdf", version.ref = "asciidoctor" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+errorprone = { id = "net.ltgt.errorprone", version.ref = "errorpronePlugin" }
+nullaway = { id = "net.ltgt.nullaway", version.ref = "nullawayPlugin" }
+pluginPublish = { id = "com.gradle.plugin-publish", version.ref = "pluginPublish" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+mavenPluginDev = { id = "org.gradlex.maven-plugin-development", version.ref = "mavenPluginDev" }
+versionInjection = { id = "org.hibernate.build.version-injection", version.ref = "hibernateBuild" }
+bndPlugin = { id = "biz.aQute.bnd", version.ref = "bnd" }
+bndBuilder = { id = "biz.aQute.bnd.builder", version.ref = "bnd" }
+
+nexusPublish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublish" }
+ideaExt = { id = "org.jetbrains.gradle.plugin.idea-ext", version.ref = "ideaExt" }
+taskTree = { id = "com.dorongold.task-tree", version.ref = "taskTree" }
+hibernateDatabaseService = { id = "org.hibernate.orm.database-service" }
+hibernateBuildJdks = { id = "org.hibernate.orm.build.jdks" }
+hibernateBuildReports = { id = "org.hibernate.orm.build.reports" }
+hibernateBuildSettingsDoc = { id = "org.hibernate.orm.build.settings-doc" }
+hibernateBuildAntlr = { id = "org.hibernate.orm.antlr" }
+hibernateBuildJavaModule = { id = "org.hibernate.orm.build.java-module" }
+
+hibernateXjc = { id = "local-xjc-plugin" }
+idea = { id = "idea" }
+eclipse = { id = "eclipse" }
+forbiddenapis = { id = "de.thetaphi.forbiddenapis" }
+
+[bundles]
+
+hibernate-bom = ["hibernate-models", "hibernate-core", "hibernate-vector", "hibernate-testing", "hibernate-byteBuddy", "hibernate-byteBuddyAgent" ]

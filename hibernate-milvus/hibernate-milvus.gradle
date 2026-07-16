@@ -1,0 +1,30 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ * Copyright Red Hat Inc. and Hibernate Authors
+ */
+
+plugins {
+    id "local.publishing-java-module"
+}
+
+description = 'Hibernate\'s extensions for Milvus database'
+
+dependencies {
+    api project( ':hibernate-nosql-core' )
+    implementation libs.hibernate.vector
+
+    if ( db.startsWith( 'milvus' ) && dbVersion.startsWith( "3" ) ) {
+        implementation libs.jdbc.milvus30
+    }
+    else {
+        // Compile against the version 2.6 for now, since 3.0 is not out of beta yet
+        implementation libs.jdbc.milvus26
+    }
+
+    testImplementation libs.hibernate.testing
+//    testImplementation project( path: ':hibernate-core', configuration: 'tests' )
+}
+
+test {
+    include '**/**'
+}

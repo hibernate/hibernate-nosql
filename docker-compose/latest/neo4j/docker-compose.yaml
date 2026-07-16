@@ -1,0 +1,13 @@
+services:
+  neo4j:
+    container_name: neo4j
+    image: ${NEO4J_IMAGE:-docker.io/neo4j:2026.06.0-community@sha256:92910da6f74961750e39093084c944a9234fa0f56064869cffd61ec9df2a0e15}
+    environment:
+      - NEO4J_AUTH=neo4j/hibernate_orm_test
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+      - NEO4J_PLUGINS=\[\"apoc\"\]
+    ports:
+      - "7474:7474"
+      - "7687:7687"

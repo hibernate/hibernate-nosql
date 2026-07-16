@@ -1,0 +1,35 @@
+plugins {
+    id "java-platform"
+    id "local.module"
+    id "local.publishing"
+}
+
+description = 'Platform (BOM) for Hibernate NoSQL dependencies'
+
+dependencies {
+    constraints {
+        api project( ":hibernate-nosql-core" )
+
+        api project( ":hibernate-milvus" )
+        api project( ":hibernate-neo4j" )
+
+        api libs.hibernate.models
+        api libs.hibernate.core
+        api libs.hibernate.vector
+    }
+}
+
+
+tasks.register("releasePrepare") {
+    group = "release-prepare"
+    description = "See :release:releasePrepare for details."
+
+    dependsOn tasks.generateMetadataFileForPublishedArtifactsPublication
+    dependsOn tasks.generatePomFileForPublishedArtifactsPublication
+    dependsOn tasks.publishAllPublicationsToStagingRepository
+}
+
+var publishingExtension = project.getExtensions().getByType(PublishingExtension) as PublishingExtension
+publishingExtension.publications.named("publishedArtifacts", MavenPublication) {
+    from components.javaPlatform
+}
