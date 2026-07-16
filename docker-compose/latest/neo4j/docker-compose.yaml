@@ -1,7 +1,7 @@
 services:
   neo4j:
     container_name: neo4j
-    image: ${NEO4J_IMAGE:-docker.io/neo4j:2026.06.0-community@sha256:92910da6f74961750e39093084c944a9234fa0f56064869cffd61ec9df2a0e15}
+    image: ${NEO4J_IMAGE:-docker.io/neo4j:2026.06.0-community@sha256:ba2b859bdbe7017a9baa1a7b5681ac9732198753719b0a502e3645feddfdec72}
     environment:
       - NEO4J_AUTH=neo4j/hibernate_orm_test
       - NEO4J_apoc_export_file_enabled=true

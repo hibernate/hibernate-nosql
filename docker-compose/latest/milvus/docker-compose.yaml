@@ -1,7 +1,7 @@
 services:
   etcd:
     container_name: milvus-etcd
-    image: quay.io/coreos/etcd:v3.5.25
+    image: quay.io/coreos/etcd:v3.7.0
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
       - ETCD_AUTO_COMPACTION_RETENTION=1000
@@ -32,7 +32,7 @@ services:
 
   milvus:
     container_name: milvus
-    image: ${MILVUS_IMAGE:-docker.io/milvusdb/milvus:v3.0-beta@sha256:9fef5c6893c15eee16477e38a6757e22af62031ef4b8beee3ba55b81b1a26e8a}
+    image: ${MILVUS_IMAGE:-docker.io/milvusdb/milvus:v3.0-beta@sha256:0a030f267a16358901c662adac02813027ace9e23bfbe6db66528e4fd1c28168}
     command: ["milvus", "run", "standalone"]
     security_opt:
       - seccomp:unconfined
