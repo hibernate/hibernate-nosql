@@ -27,7 +27,7 @@ jakarta-json-bind = "2.0.0"
 jakarta-json-api = "2.0.2"
 yasson = "2.0.4"
 ejb =  "4.0.1"
-jnosql = "1.0.0"
+jnosql = "1.0.1"
 
 # Test Libs
 junitJupiter = "6.0.3"
