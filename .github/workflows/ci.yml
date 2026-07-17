@@ -44,6 +44,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # This is just a sanity check for the compilation and JNoSQL implementation
+          - rdbms: h2
           - rdbms: neo4j
           - rdbms: milvus_2_6
           - rdbms: milvus_3_0
