@@ -121,6 +121,7 @@ include 'hibernate-neo4j'
 include 'hibernate-platform'
 
 include 'release'
+include 'reporting'
 
 rootProject.children.each { project ->
     project.buildFileName = "${project.name}.gradle"

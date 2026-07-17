@@ -1,0 +1,29 @@
+plugins {
+    id "local.module"
+    id 'jacoco-report-aggregation'
+}
+
+description = 'Reporting module'
+
+ext {
+    projectsToIncludeWhenAggregatingCoverage = [
+            'hibernate-milvus',
+            'hibernate-neo4j',
+            'hibernate-nosql-core'
+    ]
+}
+
+tasks.register('mergeCodeCoverageReport', JacocoReport) {
+    executionData fileTree(rootProject.layout.projectDirectory.asFile).include("**/target/jacoco/*.exec")
+    parent.subprojects.each { Project subProject ->
+        if ( project.projectsToIncludeWhenAggregatingCoverage.contains( subProject.name ) ) {
+            sourceSets  subProject.sourceSets.main
+        }
+    }
+
+    reports {
+        xml.required = true
+    }
+
+    dependsOn rootProject.subprojects.collect { p -> p.tasks.matching { it.name == 'compileJava' } }
+}
