@@ -146,6 +146,9 @@ updates:
       # (see https://central.sonatype.com/artifact/org.apache.maven/maven-embedder/3.9.9/dependencies)
       - dependency-name: "org.slf4j:*"
         update-types: ["version-update:semver-major"]
+      # Pin Milvus SDK versions to their respective minor version series
+      - dependency-name: "io.milvus:milvus-sdk-java-bulkwriter"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       # Breaks documentation building for some reason
       - dependency-name: "org.asciidoctor:asciidoctorj"
         versions: ["3.0.1"]
