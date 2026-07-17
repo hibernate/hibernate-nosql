@@ -339,10 +339,12 @@ dependencies {
     bomVersions platform(libs.hibernate.bom)
     bomVersions libs.hibernate.byteBuddy
     bomVersions libs.hibernate.models
+    bomVersions libs.logging
 }
 configurations.matching { it.name != "bomVersions" && it.name != "bomVersionsResolved" }.configureEach {
     resolutionStrategy.eachDependency { details ->
-        if (details.requested.group == "net.bytebuddy" || details.requested.group == "org.hibernate.models") {
+        if (details.requested.group == "net.bytebuddy" || details.requested.group == "org.hibernate.models"
+                || (details.requested.group == "org.jboss.logging" && details.requested.name == "jboss-logging")) {
             def groupMatch = configurations.bomVersionsResolved.resolvedConfiguration
                     .resolvedArtifacts
                     .find { it.moduleVersion.id.group == details.requested.group }
