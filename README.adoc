@@ -7,6 +7,8 @@ image:https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jvm-
 
 Hibernate NoSQL extends Hibernate ORM by providing connectors and dialects for NoSQL databases.
 
+CAUTION: This is early work. All contributions welcome.
+
 // == Getting started
 //
 // Documentation for Hibernate NoSQL is available at:
