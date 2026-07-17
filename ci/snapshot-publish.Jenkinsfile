@@ -53,11 +53,11 @@ pipeline {
                         ]) {
                             checkoutReleaseScripts()
                             def version = sh(
-                                    script: ".release/scripts/determine-current-version.sh orm",
+                                    script: ".release/scripts/determine-current-version.sh nosql",
                                     returnStdout: true
                             ).trim()
                             echo "Current version: '${version}'"
-                            sh "bash -xe .release/scripts/snapshot-deploy.sh orm ${version}"
+                            sh "bash -xe .release/scripts/snapshot-deploy.sh nosql ${version}"
                         }
                     }
                 }

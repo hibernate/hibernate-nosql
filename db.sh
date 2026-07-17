@@ -47,8 +47,6 @@ DB_COUNT=1
 if [[ "$(uname -s)" == "Darwin" ]]; then
   IS_OSX=true
   DB_COUNT=$(sysctl -n hw.physicalcpu)
-  # PostGIS images only support amd64, so we force emulation on macOS
-  export POSTGRESQL_PLATFORM="linux/amd64"
 else
   IS_OSX=false
   DB_COUNT=$(nproc)
