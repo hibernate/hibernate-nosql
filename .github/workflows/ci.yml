@@ -266,7 +266,7 @@ jobs:
       - build
     if: |
       always() && !cancelled()
-      && needs.build.result != 'cancelled' && needs.otp.result != 'cancelled'
+      && needs.build.result != 'cancelled'
     runs-on: ubuntu-latest
 
     steps:
