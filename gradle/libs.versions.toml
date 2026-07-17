@@ -19,14 +19,14 @@ jnosql = "1.0.1"
 junitJupiter = "6.0.3"
 junitJupiterLauncher = "6.0.3"
 junitJupiterPlatformGradlePlugin = "1.0.3"
-assertj = "3.26.3"
+assertj = "3.27.7"
 log4j = "2.26.1"
 
 # JDBC Libs
 h2 = "2.4.240"
 neo4j = "6.14.0"
-milvus2_6 = "2.6.20"
-milvus3_0 = "3.0.4"
+milvus2_6 = "2.6.22"
+milvus3_0 = "2.6.22"
 
 #Buildscript
 forbiddenapis = "3.10"
