@@ -317,12 +317,36 @@ tasks.withType(AbstractArchiveTask).configureEach {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Configurations and Dependencies
 
-configurations.configureEach {
+// The hibernate-platform BOM only constrains byte-buddy in its runtimeElements variant.
+// Use a dedicated configuration to resolve the byte-buddy version from the BOM,
+// then align the compile classpath to use the same version.
+configurations {
+    byteBuddyVersionFromBom {
+        canBeConsumed = false
+        canBeResolved = false
+    }
+    byteBuddyVersionFromBomClasspath {
+        canBeConsumed = false
+        canBeResolved = true
+        extendsFrom(configurations.byteBuddyVersionFromBom)
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        }
+    }
+}
+dependencies {
+    byteBuddyVersionFromBom platform(libs.hibernate.bom)
+    byteBuddyVersionFromBom libs.hibernate.byteBuddy
+}
+configurations.compileClasspath {
     resolutionStrategy.eachDependency { details ->
-        //Force the "byte buddy agent" version to match the Byte Buddy version
-        // we use, as Mockito might pull in a mismatched version transitively
-        if (details.requested.group == "net.bytebuddy" && details.requested.name == 'byte-buddy-agent') {
-            details.useVersion libs.versions.byteBuddy.get()
+        if (details.requested.group == "net.bytebuddy") {
+            def resolved = configurations.byteBuddyVersionFromBomClasspath.resolvedConfiguration
+                    .resolvedArtifacts
+                    .find { it.moduleVersion.id.group == "net.bytebuddy" && it.moduleVersion.id.name == details.requested.name }
+            if (resolved) {
+                details.useVersion resolved.moduleVersion.id.version
+            }
         }
     }
 }
