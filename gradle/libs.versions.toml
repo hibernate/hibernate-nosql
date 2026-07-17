@@ -3,6 +3,7 @@
 # Main Libs
 hibernate = "7.4.5.Final"
 jbossLoggingTool = "3.0.4.Final"
+jandex = "3.6.0"
 
 # Jakarta Libs
 annotation = "3.0.0"
@@ -72,6 +73,7 @@ hibernate-vector = { group = "org.hibernate.orm", name = "hibernate-vector" }
 hibernate-testing = { group = "org.hibernate.orm", name = "hibernate-testing" }
 hibernate-byteBuddy = { group = "net.bytebuddy", name = "byte-buddy" }
 
+jandex = { group = "io.smallrye", name = "jandex", version.ref = "jandex" }
 logging = { group = "org.jboss.logging", name = "jboss-logging" }
 loggingAnnotations = { group = "org.jboss.logging", name = "jboss-logging-annotations", version.ref = "jbossLoggingTool" }
 loggingProcessor = { group = "org.jboss.logging", name = "jboss-logging-processor", version.ref = "jbossLoggingTool" }

@@ -1,0 +1,45 @@
+:shared-attributes-dir: {doc-main-dir}/asciidoc/shared
+include::{shared-attributes-dir}/url-attributes.adoc[]
+
+[[preface]]
+== Preface
+
+NoSQL databases provide different data modeling and performance characteristics compared to Relational Databases,
+yet the necessity to map between the Database specific format and Java objects is still prevalent.
+Hibernate is an Object/Relational Mapping solution for Java environments.
+The term https://en.wikipedia.org/wiki/Object-relational_mapping[Object/Relational Mapping] refers to the technique of mapping data from an object model representation to a relational data model representation (and vice versa).
+
+Hibernate NoSQL is an extension to Hibernate ORM, providing a similar developer experience to NoSQL Database users.
+It takes care of the mapping from Java classes to documents/graphs/tables (and from Java data types to datastore data types), but also provides data query and retrieval facilities.
+It can significantly reduce development time otherwise spent with manual data handling in the various proprietary query languages and specialized drivers.
+Hibernate NoSQL’s design goal, similar to Hibernate ORM’s, is to relieve the developer from 95% of common data persistence-related programming tasks by eliminating the need for manual, hand-crafted data processing.
+However, unlike many other persistence solutions, Hibernate NoSQL does not hide the power of the native query language and driver from you.
+
+Hibernate NoSQL may not be the best solution for data-centric applications that use highly specialized driver/datastore features to implement the business logic, it is most useful with object-oriented domain models and business logic in the Java-based middle-tier.
+However, Hibernate NoSQL can certainly help you to remove or encapsulate vendor-specific query and driver code and will help with the common task of result set translation from the native driver representation to a graph of objects.
+
+[[system-requirements]]
+=== System Requirements
+
+Hibernate {majorMinorVersion} requires at least Java {javaCompatibleVersions} and JDBC 4.2.
+
+[[getting-started]]
+=== Getting Started
+
+include::{shared-attributes-dir}/background.adoc[]
+
+[TIP]
+====
+New users may want to first look at the tutorial-style link:{doc-quick-start-url}[Quick Start] guide.
+
+This User Guide is really more of a reference guide.
+====
+
+
+=== Get Involved
+
+* Use Hibernate NoSQL and report any bugs or issues you find. See https://hibernate.org/issuetracker[Issue Tracker] for details.
+* Try your hand at fixing some bugs or implementing enhancements. Again, see https://hibernate.org/issuetracker[Issue Tracker].
+* Engage with the community using the methods listed in the https://hibernate.org/community[Community section].
+* Help improve this documentation. Contact us on the developer mailing list or Zulip if you have interest.
+* Spread the word. Let the rest of your organization know about the benefits of Hibernate.

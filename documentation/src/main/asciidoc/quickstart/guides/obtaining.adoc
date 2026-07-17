@@ -1,0 +1,103 @@
+[[obtaining]]
+== Obtaining Hibernate NoSQL
+
+Hibernate NoSQL is broken into a number of modules/artifacts under the `org.hibernate.nosql`
+group and depends on Hibernate ORM under the `org.hibernate.orm` group. The main artifact is named `hibernate-core`
+and then there is a module/artifact for every supported NoSQL database.
+
+[NOTE,subs="attributes+"]
+====
+This guide uses {fullVersion} as the Hibernate NoSQL version for illustration purposes.  Be sure to change
+this version, if necessary, to the version you wish to use.
+====
+
+We can declare a dependency on this artifact using https://www.gradle.org[Gradle]
+
+[source,groovy,subs="attributes+"]
+----
+dependencies {
+  implementation "org.hibernate.nosql:hibernate-neo4j:{fullVersion}"
+}
+----
+
+or https://maven.org[Maven]:
+
+[source,xml,subs="attributes+"]
+----
+<dependency>
+    <groupId>org.hibernate.nosql</groupId>
+    <artifactId>hibernate-neo4j</artifactId>
+    <version>{fullVersion}</version>
+</dependency>
+----
+
+[[modules]]
+=== Hibernate NoSQL modules
+
+As mentioned earlier, Hibernate NoSQL is broken into a number of modules with the intent of isolating
+transitive dependencies for the respective NoSQL database that is in use.
+
+[cols="40m,~"]
+.API-oriented modules
+|===
+|hibernate-nosql-core| A JNoSQL implementation of Hibernate ORM
+|===
+
+[cols="40m,~"]
+.NoSQL database modules
+|===
+|hibernate-milvus| Support for the https://milvus.io/[Milvus] database
+|hibernate-neo4j| Support for the https://neo4j.com/[Neo4j] database
+|===
+
+[[platform]]
+=== Platform / BOM
+
+Hibernate NoSQL also provides a platform (BOM in Maven terminology) module which can be used to align versions of the Hibernate NoSQL modules along with the versions of its libraries.  The platform artifact is named `hibernate-platform`.
+
+To apply the platform in Gradle
+
+[source,groovy,subs="attributes+"]
+----
+dependencies {
+  implementation platform "org.hibernate.nosql:hibernate-platform:{fullVersion}"
+
+  // use the versions from the platform
+  implementation "org.hibernate.nosql:hibernate-neo4j"
+  implementation "jakarta.transaction:jakarta.transaction-api"
+}
+----
+
+See the https://docs.gradle.org/current/userguide/java_platform_plugin.html#sec:java_platform_consumption[Gradle documentation] for capabilities of applying a platform.
+
+To apply the platform (BOM) in Maven
+
+[source,xml,subs="attributes+"]
+----
+<dependency>
+    <groupId>org.hibernate.nosql</groupId>
+    <artifactId>hibernate-neo4j</artifactId>
+</dependency>
+<dependency>
+    <groupId>jakarta.transaction</groupId>
+    <artifactId>jakarta.transaction-api</artifactId>
+</dependency>
+
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.hibernate.nosql</groupId>
+      <artifactId>hibernate-platform</artifactId>
+      <version>{fullVersion}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+----
+
+[[examples]]
+=== Example sources
+The bundled examples mentioned in this tutorial can be downloaded from link:{doc-quick-start-url}hibernate-tutorials.zip[here].
+
+Alternatively, the example source code can also be obtained from https://github.com/hibernate/hibernate-nosql/tree/{fullVersion}/documentation/src/main/asciidoc/quickstart/tutorials[Github]

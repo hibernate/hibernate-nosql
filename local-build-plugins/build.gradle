@@ -25,6 +25,7 @@ dependencies {
     implementation libs.jakarta.basicjaxbTools
     implementation libs.jakarta.basicjaxbPlugins
 
+	implementation libs.jandex
     implementation libs.jakarta.jsonApi
     implementation libs.jakarta.jsonBind
     implementation libs.jakarta.yasson
@@ -49,6 +50,10 @@ gradlePlugin {
 		antlrPlugin {
 			id = 'org.hibernate.orm.antlr'
 			implementationClass = 'org.hibernate.orm.antlr.AntlrPlugin'
+		}
+		reportsPlugin {
+			id = 'org.hibernate.orm.build.reports'
+			implementationClass = 'org.hibernate.orm.post.ReportGenerationPlugin'
 		}
 		envSettings {
 			id = 'org.hibernate.orm.build.env-settings'
