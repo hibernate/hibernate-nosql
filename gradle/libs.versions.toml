@@ -2,7 +2,6 @@
 
 # Main Libs
 hibernate = "7.4.5.Final"
-hibernateModels = "1.1.1"
 jbossLogging = "3.6.3.Final"
 jbossLoggingTool = "3.0.4.Final"
 
@@ -68,7 +67,7 @@ taskTree = "4.0.1"
 hibernate-bom = { group = "org.hibernate.orm", name = "hibernate-platform", version.ref = "hibernate" }
 
 hibernate-models = { group = "org.hibernate.models", name = "hibernate-models" }
-hibernate-models-jandex = { group = "org.hibernate.models", name = "hibernate-models-jandex", version.ref = "hibernateModels" }
+hibernate-models-jandex = { group = "org.hibernate.models", name = "hibernate-models-jandex" }
 hibernate-core = { group = "org.hibernate.orm", name = "hibernate-core" }
 hibernate-vector = { group = "org.hibernate.orm", name = "hibernate-vector" }
 hibernate-testing = { group = "org.hibernate.orm", name = "hibernate-testing" }

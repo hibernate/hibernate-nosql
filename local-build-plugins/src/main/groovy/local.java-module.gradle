@@ -317,35 +317,37 @@ tasks.withType(AbstractArchiveTask).configureEach {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Configurations and Dependencies
 
-// The hibernate-platform BOM only constrains byte-buddy in its runtimeElements variant.
-// Use a dedicated configuration to resolve the byte-buddy version from the BOM,
-// then align the compile classpath to use the same version.
+// Resolve dependency versions from the hibernate-platform BOM for artifacts
+// that the BOM doesn't constrain on all variants (e.g. byte-buddy is only
+// in runtimeElements) or that share a group with a constrained artifact
+// (e.g. hibernate-models-jandex aligns with hibernate-models).
 configurations {
-    byteBuddyVersionFromBom {
+    bomVersions {
         canBeConsumed = false
         canBeResolved = false
     }
-    byteBuddyVersionFromBomClasspath {
+    bomVersionsResolved {
         canBeConsumed = false
         canBeResolved = true
-        extendsFrom(configurations.byteBuddyVersionFromBom)
+        extendsFrom(configurations.bomVersions)
         attributes {
             attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
         }
     }
 }
 dependencies {
-    byteBuddyVersionFromBom platform(libs.hibernate.bom)
-    byteBuddyVersionFromBom libs.hibernate.byteBuddy
+    bomVersions platform(libs.hibernate.bom)
+    bomVersions libs.hibernate.byteBuddy
+    bomVersions libs.hibernate.models
 }
-configurations.compileClasspath {
+configurations.matching { it.name != "bomVersions" && it.name != "bomVersionsResolved" }.configureEach {
     resolutionStrategy.eachDependency { details ->
-        if (details.requested.group == "net.bytebuddy") {
-            def resolved = configurations.byteBuddyVersionFromBomClasspath.resolvedConfiguration
+        if (details.requested.group == "net.bytebuddy" || details.requested.group == "org.hibernate.models") {
+            def groupMatch = configurations.bomVersionsResolved.resolvedConfiguration
                     .resolvedArtifacts
-                    .find { it.moduleVersion.id.group == "net.bytebuddy" && it.moduleVersion.id.name == details.requested.name }
-            if (resolved) {
-                details.useVersion resolved.moduleVersion.id.version
+                    .find { it.moduleVersion.id.group == details.requested.group }
+            if (groupMatch) {
+                details.useVersion groupMatch.moduleVersion.id.version
             }
         }
     }
