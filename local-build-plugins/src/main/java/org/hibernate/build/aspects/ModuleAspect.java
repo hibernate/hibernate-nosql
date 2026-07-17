@@ -25,7 +25,7 @@ public class ModuleAspect implements Aspect {
 				target
 		);
 
-		target.setGroup( "org.hibernate.orm" );
+		target.setGroup( "org.hibernate.nosql" );
 		target.setVersion( ormBuildDetails.getHibernateVersionName() );
 
 		target.getLayout().getBuildDirectory().set( target.getLayout().getProjectDirectory().dir( "target" ) );
