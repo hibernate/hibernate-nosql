@@ -36,66 +36,6 @@ def releasePrepareTask = tasks.register("releasePrepare") {
 // Assemble documentation as part of Release Prepare
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def stageIntegrationGuideTask = tasks.register( "stageIntegrationGuide", Copy ) {
-    group = "documentation"
-    description = "Stages the Integration Guide as part of assembling documentation in preparation for release"
-
-    dependsOn ":documentation:renderIntegrationGuides"
-
-    from project.provider { project( ":documentation" ).layout.buildDirectory.dir( "asciidoc/integrationguide" ) }
-    into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/integrationguide")
-}
-
-def stageQuickstartTask = tasks.register( "stageQuickstart", Copy ) {
-    group = 'documentation'
-    description = "Stages the Getting Started Guide as part of assembling documentation in preparation for release"
-
-    dependsOn ':documentation:renderGettingStartedGuides'
-
-    from project.provider { project( ":documentation" ).layout.buildDirectory.dir( "asciidoc/quickstart" ) }
-    into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/quickstart")
-}
-
-def stageTopicalGuideTask = tasks.register( "stageTopicalGuide", Copy ) {
-    group = 'documentation'
-    description = "Stages the Topical Guide as part of assembling documentation in preparation for release"
-
-    dependsOn ':documentation:renderTopicalGuides'
-
-    from project.provider { project( ":documentation" ).layout.buildDirectory.dir( "asciidoc/topical" ) }
-    into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/topical")
-}
-
-def stageIntroductionGuideTask = tasks.register( "stageIntroductionGuide", Copy ) {
-    group = 'documentation'
-    description = "Stages the Introduction Guide as part of assembling documentation in preparation for release"
-
-    dependsOn ':documentation:renderIntroductionGuides'
-
-    from project.provider { project( ":documentation" ).layout.buildDirectory.dir( "asciidoc/introduction" ) }
-    into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/introduction")
-}
-
-def stageQueryGuideTask = tasks.register( "stageQueryGuide", Copy ) {
-    group = 'documentation'
-    description = "Stages the Query Language Guide as part of assembling documentation in preparation for release"
-
-    dependsOn ':documentation:renderQueryLanguageGuides'
-
-    from project.provider { project( ":documentation" ).layout.buildDirectory.dir( "asciidoc/querylanguage" ) }
-    into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/querylanguage")
-}
-
-def stageRepositoriesGuideTask = tasks.register( "stageRepositoriesGuide", Copy ) {
-    group = 'documentation'
-    description = "Stages the Repositories Guide as part of assembling documentation in preparation for release"
-
-    dependsOn ':documentation:renderRepositories'
-
-    from project.provider { project( ":documentation" ).layout.buildDirectory.dir( "asciidoc/repositories" ) }
-    into rootProject.layout.buildDirectory.dir("staging-deploy/documentation/repositories")
-}
-
 def stageUserGuideTask = tasks.register( "stageUserGuide", Copy ) {
     group = 'documentation'
     description = "Stages the User Guide as part of assembling documentation in preparation for release"
@@ -158,13 +98,7 @@ def assembleDocumentationTask = tasks.register( "assembleDocumentation" ) {
 
     dependsOn ':documentation:buildDocsForPublishing'
     dependsOn stageJavadocsTask
-    dependsOn stageQuickstartTask
-    dependsOn stageIntroductionGuideTask
     dependsOn stageUserGuideTask
-    dependsOn stageQueryGuideTask
-    dependsOn stageRepositoriesGuideTask
-    dependsOn stageIntegrationGuideTask
-    dependsOn stageTopicalGuideTask
     dependsOn stageMigrationGuideTask
     dependsOn stageDialectGuideTask
     dependsOn stageWhatsNewGuideTask

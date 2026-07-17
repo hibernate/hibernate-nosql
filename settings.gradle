@@ -120,6 +120,9 @@ include 'hibernate-neo4j'
 
 include 'hibernate-platform'
 
+include 'local-build-asciidoctor-extensions'
+
+include 'documentation'
 include 'release'
 include 'reporting'
 
