@@ -195,13 +195,9 @@ tasks.withType( Test.class ).configureEach { test ->
     if (!skipJacoco) {
         def coverageReportSuffix = providers.gradleProperty('db').orElse('default')
                 .flatMap { db ->
-                    // Oracle DBs tested on OTP are all using the same db name no matter the version...
+                    // There are test runs using same DB but different version,
                     // this would be a problem for creating/merging Jacoco reports, hence:
-                    if ("oracle_test_pilot_database" == db) {
-                        return providers.environmentVariable("RDBMS").orElse(db)
-                    } else {
-                        return providers.provider { db }
-                    }
+                    return providers.environmentVariable("RDBMS").orElse(db)
                 }
         def javaVersion = JavaVersion.current().majorVersion
         test.jacoco {

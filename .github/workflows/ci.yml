@@ -153,6 +153,16 @@ jobs:
             ./**/target/classes/
             ./**/target/generated/
             .gradle/caches/build-cache-*
+      - name: Upload docs preview
+        if: "${{ matrix.rdbms == 'h2' }}"
+        uses: hibernate/.github/actions/build-docs-preview@3557603173bed679b6b8e73add161d31c87793b6 # main
+        with:
+          dist-path: 'documentation/target/asciidoc'
+          src-paths: |
+            documentation/src
+            migration-guide.adoc
+            dialects.adoc
+            whats-new.adoc
       - name: Upload test reports (if Gradle failed)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
