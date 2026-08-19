@@ -25,12 +25,12 @@ log4j = "2.26.1"
 # JDBC Libs
 h2 = "2.4.240"
 neo4j = "6.14.0"
-milvus2_6 = "2.6.22"
-milvus3_0 = "2.6.22"
+milvus2_6 = "2.6.23"
+milvus3_0 = "2.6.23"
 
 #Buildscript
 forbiddenapis = "3.10"
-jsoup = "1.22.2"
+jsoup = "1.23.1"
 slf4j = "2.0.18"
 
 # Asciidocs
@@ -47,9 +47,9 @@ guava = "33.6.0-jre"
 
 # Plugins
 develocity = "4.5.0"
-customUserData = "2.7.0"
+customUserData = "2.8.0"
 asciidoctor = "4.0.5"
-spotless = "8.8.0"
+spotless = "8.9.0"
 errorpronePlugin = "5.1.0"
 nullawayPlugin = "3.1.0"
 pluginPublish = "2.1.1"
@@ -59,7 +59,7 @@ hibernateBuild = "2.3.0"
 bnd = "7.3.0"
 nexusPublish = "2.0.0"
 ideaExt = "1.4.1"
-taskTree = "4.0.1"
+taskTree = "4.0.2"
 
 
 [libraries]
