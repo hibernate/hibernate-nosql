@@ -52,6 +52,7 @@ public class MilvusDriver implements Driver {
 			}
 		}
 		String query = uri.getQuery();
+		Properties props = new Properties();
 		if ( query != null && !query.isEmpty() ) {
 			String[] queryParts = query.split( "&" );
 			for ( int i = 0; i < queryParts.length; i++ ) {
@@ -64,8 +65,13 @@ public class MilvusDriver implements Driver {
 				if ( key.equals( "secure" ) ) {
 					secure = Boolean.parseBoolean( value );
 				}
+				else {
+					props.setProperty( key, value );
+				}
 			}
 		}
+		props.putAll( info );
+
 		String host = uri.getHost();
 		int port = uri.getPort();
 		if ( port == -1 ) {
@@ -82,7 +88,7 @@ public class MilvusDriver implements Driver {
 		ConnectConfig connectConfig = builder.dbName( database )
 				.secure( secure == Boolean.TRUE )
 				.build();
-		return new MilvusConnection( new MilvusClientV2( connectConfig ), url, userName );
+		return new MilvusConnection( new MilvusClientV2( connectConfig ), url, userName, props );
 	}
 
 	@Override

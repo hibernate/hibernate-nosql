@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.milvus.common.utils.JsonUtils;
 import io.milvus.v2.client.MilvusClientV2;
+import io.milvus.v2.common.ConsistencyLevel;
 import io.milvus.v2.common.IndexParam;
 import io.milvus.v2.service.collection.request.AddFieldReq;
 import io.milvus.v2.service.collection.request.CreateCollectionReq;
@@ -91,6 +92,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.SortedMap;
@@ -99,17 +101,21 @@ import java.util.concurrent.Executor;
 
 public class MilvusConnection implements Connection {
 
-	private final static char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 	private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
 	final MilvusClientV2 client;
 	final String url;
 	final String userName;
 
-	public MilvusConnection(MilvusClientV2 client, String url, String userName) {
+	final ConsistencyLevel defaultConsistencyLevel;
+
+	public MilvusConnection(MilvusClientV2 client, String url, String userName, Properties props) {
 		this.client = client;
 		this.url = url;
 		this.userName = userName;
+
+		this.defaultConsistencyLevel = ConsistencyLevel.valueOf(
+				props.getProperty( "defaultConsistencyLevel", "EVENTUALLY" ).toUpperCase( Locale.ROOT ) );
 	}
 
 	void createCollection(MilvusCreateCollection createCollection) {
@@ -753,6 +759,9 @@ public class MilvusConnection implements Connection {
 		if ( query.getConsistencyLevel() != null ) {
 			builder.consistencyLevel( query.getConsistencyLevel() );
 		}
+		else {
+			builder.consistencyLevel( defaultConsistencyLevel );
+		}
 		builder.offset( query.getOffset() );
 		builder.limit( query.getLimit() );
 		if ( query.getFilterTemplateValues() != null ) {
@@ -924,6 +933,9 @@ public class MilvusConnection implements Connection {
 		if ( query.getConsistencyLevel() != null ) {
 			builder.consistencyLevel( query.getConsistencyLevel() );
 		}
+		else {
+			builder.consistencyLevel( defaultConsistencyLevel );
+		}
 		if ( query.getRoundDecimal() != 0 ) {
 			builder.roundDecimal( query.getRoundDecimal() );
 		}
@@ -993,6 +1005,9 @@ public class MilvusConnection implements Connection {
 		}
 		if ( query.getConsistencyLevel() != null ) {
 			builder.consistencyLevel( query.getConsistencyLevel() );
+		}
+		else {
+			builder.consistencyLevel( defaultConsistencyLevel );
 		}
 		builder.offset( query.getOffset() );
 		builder.limit( query.getLimit() );
