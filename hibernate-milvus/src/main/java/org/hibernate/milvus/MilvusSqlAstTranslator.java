@@ -4,6 +4,7 @@
  */
 package org.hibernate.milvus;
 
+import io.milvus.v2.common.ConsistencyLevel;
 import io.milvus.v2.common.IndexParam;
 import org.hibernate.LockMode;
 import org.hibernate.Locking;
@@ -40,6 +41,7 @@ import org.hibernate.milvus.jdbc.MilvusUpsert;
 import org.hibernate.persister.internal.SqlFragmentPredicate;
 import org.hibernate.query.SortDirection;
 import org.hibernate.query.common.FetchClauseType;
+import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.ComparisonOperator;
 import org.hibernate.query.sqm.sql.internal.BasicValuedPathInterpretation;
 import org.hibernate.query.sqm.sql.internal.SqmParameterInterpretation;
@@ -119,6 +121,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -132,6 +135,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 	private static final String TRUE_CONSTANT = "1=1";
 
 	private MilvusStatementDefinition milvusStatement;
+	private List<String> databaseHints;
 
 	protected MilvusSqlAstTranslator(SessionFactoryImplementor sessionFactory, Statement statement) {
 		super(sessionFactory, statement);
@@ -148,6 +152,17 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 	}
 
 	@Override
+	public T translate(JdbcParameterBindings jdbcParameterBindings, QueryOptions queryOptions) {
+		try {
+			databaseHints = queryOptions.getDatabaseHints();
+			return super.translate( jdbcParameterBindings, queryOptions );
+		}
+		finally {
+			databaseHints = null;
+		}
+	}
+
+	@Override
 	public void visitSelectStatement(SelectStatement statement) {
 		final QuerySpec querySpec = statement.getQuerySpec();
 		final List<Expression> groupByClauseExpressions = querySpec.getGroupByClauseExpressions();
@@ -156,6 +171,28 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 				? new MilvusSearch()
 				: new MilvusQuery();
 		super.visitSelectStatement( statement );
+		applyHints();
+	}
+
+	private void applyHints() {
+		if (databaseHints != null && !databaseHints.isEmpty()) {
+			for ( String databaseHint : databaseHints ) {
+				final int assignmentIndex = databaseHint.indexOf( '=' );
+				if ( assignmentIndex != -1 ) {
+					switch (databaseHint.substring( 0, assignmentIndex ) ) {
+						case MilvusDatabaseHints.CONSISTENCY_LEVEL -> applyConsistencyLevelHint( milvusStatement,
+								databaseHint.substring( assignmentIndex + 1 ) );
+					}
+				}
+			}
+		}
+	}
+
+	private void applyConsistencyLevelHint(MilvusStatementDefinition milvusStatement, String hintValue) {
+		final ConsistencyLevel consistencyLevel = ConsistencyLevel.valueOf( hintValue.toUpperCase( Locale.ROOT ) );
+		if ( milvusStatement instanceof AbstractMilvusQuery query ) {
+			query.setConsistencyLevel( consistencyLevel );
+		}
 	}
 
 	@Override
@@ -169,6 +206,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 	public void visitDeleteStatement(DeleteStatement statement) {
 		milvusStatement = new MilvusDelete();
 		super.visitDeleteStatement( statement );
+		applyHints();
 	}
 
 	@Override
@@ -201,6 +239,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 	public void visitUpdateStatement(UpdateStatement statement) {
 		milvusStatement = new MilvusUpsert();
 		visitUpdateStatementOnly( statement );
+		applyHints();
 	}
 
 	@Override
@@ -267,6 +306,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		finally {
 			getCurrentClauseStack().pop();
 		}
+		applyHints();
 	}
 
 	private void addDefaultEmbeddingDataIfNeeded(Map<String, MilvusTypedValue> valueMap, MutationStatement statement) {
@@ -1695,6 +1735,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		finally {
 			getCurrentClauseStack().pop();
 		}
+		applyHints();
 	}
 
 	private boolean hasVector(ModelPartContainer modelPartContainer) {
@@ -1786,6 +1827,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		finally {
 			getCurrentClauseStack().pop();
 		}
+		applyHints();
 	}
 
 	@Override
@@ -1840,6 +1882,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		finally {
 			getCurrentClauseStack().pop();
 		}
+		applyHints();
 	}
 
 	@Override

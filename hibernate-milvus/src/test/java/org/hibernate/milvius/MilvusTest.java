@@ -14,6 +14,8 @@ import org.hibernate.annotations.Array;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.query.spi.NativeQueryInterpreter;
+import org.hibernate.jpa.HibernateHints;
+import org.hibernate.milvus.MilvusDatabaseHints;
 import org.hibernate.milvus.MilvusDialect;
 import org.hibernate.milvus.MilvusNativeQueryInterpreter;
 import org.hibernate.milvus.jdbc.MilvusJsonHelper;
@@ -41,6 +43,7 @@ import static org.hibernate.nosql.testing.VectorTestHelper.euclideanSquaredDista
 import static org.hibernate.nosql.testing.VectorTestHelper.innerProduct;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DomainModel(annotatedClasses = MilvusTest.VectorEntity.class)
 @SessionFactory
@@ -210,6 +213,20 @@ public class MilvusTest {
 					.setParameter( "ids", List.of( 1L, 2L ) )
 					.getSingleResult();
 			assertEquals( 2L, count );
+		} );
+	}
+
+	@Test
+	public void testDatabaseHint(SessionFactoryScope scope) {
+		scope.inTransaction( em -> {
+			final VectorEntity result = em.createSelectionQuery(
+							"from VectorEntity e where e.theLong = :id",
+							VectorEntity.class
+					)
+					.setParameter( "id", 1L )
+					.setHint( HibernateHints.HINT_QUERY_DATABASE, MilvusDatabaseHints.CONSISTENCY_LEVEL + "=STRONG" )
+					.getSingleResult();
+			assertNotNull( result );
 		} );
 	}
 
