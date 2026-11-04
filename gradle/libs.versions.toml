@@ -4,7 +4,7 @@
 hibernate = "7.4.14.Final"
 jbossLoggingTool = "3.0.4.Final"
 jandex = "3.6.0"
-gson = "2.13.1"
+gson = "2.15.0"
 
 # Jakarta Libs
 annotation = "3.0.0"
