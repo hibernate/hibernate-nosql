@@ -30,7 +30,7 @@ h2 = "2.5.252"
 neo4j = "6.15.1"
 milvus2_6 = "2.6.27"
 milvus3_0 = "3.0.12"
-oracle = "23.26.3.0.0"
+oracle = "23.26.4.0.0"
 pgsql = "42.7.14"
 
 #Buildscript
