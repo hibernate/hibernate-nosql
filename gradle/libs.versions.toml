@@ -35,7 +35,7 @@ pgsql = "42.7.14"
 
 #Buildscript
 forbiddenapis = "3.11"
-jsoup = "1.23.2"
+jsoup = "1.24.1"
 slf4j = "2.0.20"
 
 # Asciidocs
@@ -45,16 +45,16 @@ asciidoctorj = "3.0.0"
 
 # Compilation (static checks)
 jetbrainsAnnotations = "26.1.0"
-errorprone = "2.51.0"
+errorprone = "2.52.0"
 nullaway = "0.14.3"
 ## For custom NullAway LibraryModels
-guava = "33.7.2-jre"
+guava = "33.8.0-jre"
 
 # Plugins
 develocity = "4.6.1"
 customUserData = "2.8.0"
 asciidoctor = "4.0.5"
-spotless = "8.10.4"
+spotless = "8.11.0"
 errorpronePlugin = "5.2.0"
 nullawayPlugin = "3.3.0"
 pluginPublish = "2.2.1"
