@@ -22,8 +22,8 @@ junitJupiterLauncher = "6.0.3"
 junitJupiterPlatformGradlePlugin = "1.0.3"
 assertj = "3.27.7"
 log4j = "2.26.1"
-jacksonAnnotations = "2.22"
-jackson = "2.22.4"
+jacksonAnnotations = "2.23"
+jackson = "2.23.0"
 
 # JDBC Libs
 h2 = "2.5.252"
