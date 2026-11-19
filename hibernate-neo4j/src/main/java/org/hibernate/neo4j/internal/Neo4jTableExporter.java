@@ -117,7 +117,7 @@ public class Neo4jTableExporter implements Exporter<Table> {
 			}
 		}
 
-		statements.add( context.getDialect().getTruncateTableStatement( table.getQualifiedName( context ) ) );
+		statements.add( context.getDialect().getTruncateSupport().renderCommands( new org.hibernate.dialect.schema.spi.TruncateRequest( java.util.List.of( table.getQualifiedName( context ) ) ) ).get( 0 ) );
 
 		return statements.toArray( new String[0] );
 	}

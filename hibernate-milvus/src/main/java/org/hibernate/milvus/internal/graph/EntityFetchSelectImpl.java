@@ -69,6 +69,7 @@ public class EntityFetchSelectImpl extends AbstractNonJoinedEntityFetch {
 				getNavigablePath(),
 				isSelectByUniqueKey(),
 				isAffectedByFilter(),
+				getFetchOptions(),
 				creationState
 		);
 	}

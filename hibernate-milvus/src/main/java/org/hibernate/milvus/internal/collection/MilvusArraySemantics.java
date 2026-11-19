@@ -4,6 +4,8 @@
  */
 package org.hibernate.milvus.internal.collection;
 
+import java.util.Set;
+import java.util.LinkedHashSet;
 import org.hibernate.collection.spi.CollectionInitializerProducer;
 import org.hibernate.collection.spi.CollectionSemantics;
 import org.hibernate.collection.spi.InitializerProducerBuilder;
@@ -24,6 +26,10 @@ import org.hibernate.sql.results.graph.collection.internal.ArrayInitializerProdu
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.function.Consumer;
+
+import static java.lang.reflect.Array.get;
+import static java.lang.reflect.Array.getLength;
+import static java.lang.reflect.Array.newInstance;
 
 public class MilvusArraySemantics<E> implements CollectionSemantics<E[], E> {
 	/**
@@ -128,5 +134,48 @@ public class MilvusArraySemantics<E> implements CollectionSemantics<E[], E> {
 		for ( E element : array ) {
 			action.accept( element );
 		}
+	}
+
+	@Override
+	public Set<?> copyPart(
+			Object rawCollection,
+			CollectionPersister collectionDescriptor,
+			CollectionPart.Nature partNature) {
+		final LinkedHashSet<Object> copy = new LinkedHashSet<>();
+		final int length = collectionSize( rawCollection );
+		if ( partNature == CollectionPart.Nature.INDEX ) {
+			final int listIndexBase =
+					collectionDescriptor.getAttributeMapping()
+							.getIndexMetadata().getListIndexBase();
+			for ( int i = 0; i < length; i++ ) {
+				copy.add( listIndexBase + i );
+			}
+		}
+		else if ( rawCollection != null && rawCollection.getClass().isArray() ) {
+			for ( int i = 0; i < length; i++ ) {
+				copy.add( get( rawCollection, i ) );
+			}
+		}
+		return copy;
+	}
+
+	@Override
+	public Object copy(
+			Object rawCollection,
+			CollectionPersister collectionDescriptor) {
+		if ( rawCollection != null && rawCollection.getClass().isArray() ) {
+			final int length = collectionSize( rawCollection );
+			final Object copy = newInstance( rawCollection.getClass().getComponentType(), length );
+			System.arraycopy( rawCollection, 0, copy, 0, length );
+			return copy;
+		}
+		else {
+			return rawCollection;
+		}
+	}
+
+	@Override
+	public int collectionSize(Object rawCollection) {
+		return rawCollection != null && rawCollection.getClass().isArray() ? getLength( rawCollection ) : 0;
 	}
 }

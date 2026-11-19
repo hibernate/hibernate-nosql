@@ -4,7 +4,7 @@
  */
 package org.hibernate.neo4j.internal;
 
-import org.hibernate.sql.ast.spi.SqlAppender;
+import org.hibernate.sql.spi.SqlAppender;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;

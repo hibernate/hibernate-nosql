@@ -10,11 +10,11 @@ import org.hibernate.query.sqm.function.AbstractSqmSelfRenderingFunctionDescript
 import org.hibernate.query.sqm.function.FunctionKind;
 import org.hibernate.query.sqm.produce.function.StandardArgumentsValidators;
 import org.hibernate.query.sqm.produce.function.StandardFunctionReturnTypeResolvers;
-import org.hibernate.sql.ast.SqlAstNodeRenderingMode;
-import org.hibernate.sql.ast.SqlAstTranslator;
-import org.hibernate.sql.ast.spi.SqlAppender;
-import org.hibernate.sql.ast.tree.SqlAstNode;
-import org.hibernate.sql.ast.tree.expression.Expression;
+import org.hibernate.sql.ast.spi.translation.SqlAstNodeRenderingMode;
+import org.hibernate.sql.ast.spi.translation.SqlAstTranslator;
+import org.hibernate.sql.spi.SqlAppender;
+import org.hibernate.sql.ast.spi.SqlAstNode;
+import org.hibernate.sql.ast.spi.query.expression.Expression;
 import org.hibernate.type.BasicType;
 import org.hibernate.vector.internal.VectorArgumentTypeResolver;
 import org.hibernate.vector.internal.VectorArgumentValidator;

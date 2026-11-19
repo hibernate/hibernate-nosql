@@ -4,8 +4,21 @@
  */
 package org.hibernate.milvus;
 
+import org.hibernate.milvus.jdbc.AbstractMilvusQuery;
+import org.hibernate.milvus.jdbc.MilvusStatementDefinition;
+import io.milvus.v2.common.ConsistencyLevel;
+import java.util.Locale;
+import org.hibernate.milvus.internal.MilvusTableDelete;
+import org.hibernate.sql.ast.spi.model.TableDeleteStandard;
+import java.util.List;
+import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.dialect.array.spi.ArraySupport;
+import org.hibernate.dialect.identifier.spi.IdentifierHelperBuildRequest;
+import org.hibernate.dialect.schema.spi.TruncateMode;
+import org.hibernate.dialect.schema.spi.TruncateRequest;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+import org.hibernate.dialect.type.spi.TypeSizingProfile;
 import io.milvus.v2.common.DataType;
-import jakarta.annotation.Nullable;
 import jakarta.persistence.GenerationType;
 import org.hibernate.LockOptions;
 import org.hibernate.boot.model.FunctionContributions;
@@ -14,11 +27,11 @@ import org.hibernate.cfg.FetchSettings;
 import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.SimpleDatabaseVersion;
-import org.hibernate.dialect.TimeZoneSupport;
+import org.hibernate.dialect.type.spi.TimeZoneSupport;
 import org.hibernate.dialect.function.CommonFunctionFactory;
 import org.hibernate.dialect.function.array.ArrayArgumentValidator;
 import org.hibernate.dialect.function.array.ArrayConstructorFunction;
-import org.hibernate.dialect.identity.IdentityColumnSupport;
+import org.hibernate.dialect.identity.spi.IdentityColumnSupport;
 import org.hibernate.dialect.lock.internal.NoLockingSupport;
 import org.hibernate.dialect.lock.spi.LockingSupport;
 import org.hibernate.engine.config.spi.ConfigurationService;
@@ -26,8 +39,6 @@ import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.jdbc.env.spi.IdentifierCaseStrategy;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
-import org.hibernate.engine.jdbc.env.spi.IdentifierHelperBuilder;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.StringHelper;
 import org.hibernate.mapping.ForeignKey;
 import org.hibernate.mapping.Index;
@@ -60,13 +71,13 @@ import org.hibernate.query.sqm.function.SqmFunctionRegistry;
 import org.hibernate.query.sqm.produce.function.StandardArgumentsValidators;
 import org.hibernate.query.sqm.produce.function.StandardFunctionReturnTypeResolvers;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.sql.ast.SqlAstTranslator;
-import org.hibernate.sql.ast.SqlAstTranslatorFactory;
-import org.hibernate.sql.ast.spi.LockingClauseStrategy;
-import org.hibernate.sql.ast.spi.SqlAppender;
-import org.hibernate.sql.ast.spi.StandardSqlAstTranslatorFactory;
-import org.hibernate.sql.ast.tree.Statement;
-import org.hibernate.sql.ast.tree.select.QuerySpec;
+import org.hibernate.sql.ast.spi.translation.SqlAstTranslator;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslatorFactory;
+import org.hibernate.dialect.lock.spi.LockingClauseStrategy;
+import org.hibernate.sql.spi.SqlAppender;
+import org.hibernate.dialect.sql.ast.spi.StandardSqlAstTranslatorFactory;
+import org.hibernate.sql.ast.spi.Statement;
+import org.hibernate.sql.ast.spi.query.select.QuerySpec;
 import org.hibernate.sql.exec.spi.JdbcOperation;
 import org.hibernate.tool.schema.spi.Exporter;
 import org.hibernate.type.BasicArrayType;
@@ -86,7 +97,6 @@ import org.hibernate.vector.internal.SparseFloatVectorJavaType;
 import org.hibernate.vector.internal.VectorArgumentTypeResolver;
 import org.hibernate.vector.internal.VectorArgumentValidator;
 
-import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -94,7 +104,7 @@ import java.util.regex.Pattern;
 
 import static java.lang.Integer.parseInt;
 import static org.hibernate.query.sqm.produce.function.FunctionParameterType.NUMERIC;
-import static org.hibernate.sql.ast.internal.NonLockingClauseStrategy.NON_CLAUSE_STRATEGY;
+import static org.hibernate.dialect.lock.internal.NonLockingClauseStrategy.NON_CLAUSE_STRATEGY;
 import static org.hibernate.type.SqlTypes.*;
 import static org.hibernate.type.SqlTypes.CHAR;
 import static org.hibernate.type.SqlTypes.CLOB;
@@ -130,7 +140,6 @@ public class MilvusDialect extends Dialect {
 
 	public MilvusDialect(DialectResolutionInfo info) {
 		this( determineVersion( info ) );
-		registerKeywords( info );
 	}
 
 	public MilvusDialect(DatabaseVersion version) {
@@ -194,21 +203,18 @@ public class MilvusDialect extends Dialect {
 	}
 
 	@Override
-	protected void initDefaultProperties() {
+	protected void contributeDefaultProperties(java.util.Properties properties) {
+		super.contributeDefaultProperties( properties );
 		// This essentially disables joins in regular find queries
-		getDefaultProperties().setProperty( FetchSettings.MAX_FETCH_DEPTH, "-1" );
+		properties.setProperty( FetchSettings.MAX_FETCH_DEPTH, "-1" );
 	}
 
-	@Override
-	public void contribute(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
-		super.contribute( typeContributions, serviceRegistry );
-		addMissingVectorField = serviceRegistry.getService( ConfigurationService.class )
-				.getSetting( MilvusSettings.ADD_MISSING_VECTOR_FIELD, StandardConverters.BOOLEAN, false );
-	}
 
 	@Override
 	public void contributeTypes(TypeContributions typeContributions, ServiceRegistry serviceRegistry) {
 		super.contributeTypes( typeContributions, serviceRegistry );
+		addMissingVectorField = serviceRegistry.getService( ConfigurationService.class )
+				.getSetting( MilvusSettings.ADD_MISSING_VECTOR_FIELD, StandardConverters.BOOLEAN, false );
 
 		final TypeConfiguration typeConfiguration = typeContributions.getTypeConfiguration();
 		final JavaTypeRegistry javaTypeRegistry = typeConfiguration.getJavaTypeRegistry();
@@ -404,42 +410,16 @@ public class MilvusDialect extends Dialect {
 		return NON_CLAUSE_STRATEGY;
 	}
 
-	@Override
-	public IdentifierHelper buildIdentifierHelper(IdentifierHelperBuilder builder, @Nullable DatabaseMetaData metadata)
-			throws SQLException {
-		builder.setUnquotedCaseStrategy( IdentifierCaseStrategy.MIXED );
-		return super.buildIdentifierHelper( builder, metadata );
-	}
 
-	@Override
-	public String getTruncateTableStatement(String tableName) {
-		return MilvusJsonHelper.serializeDefinition( new MilvusTruncateCollection( tableName ) );
-	}
 
 	@Override
 	public int getMaxIdentifierLength() {
 		return 255;
 	}
 
-	@Override
-	public int getMaxVarcharLength() {
-		return (1 << 16) - 1;
-	}
 
-	@Override
-	public int getMaxNVarcharLength() {
-		return getMaxVarcharLength();
-	}
 
-	@Override
-	public int getMaxVarbinaryLength() {
-		return getMaxVarcharLength();
-	}
 
-	@Override
-	public boolean supportsStandardArrays() {
-		return true;
-	}
 
 	@Override
 	protected String columnType(int sqlTypeCode) {
@@ -508,10 +488,6 @@ public class MilvusDialect extends Dialect {
 		return GenerationType.IDENTITY;
 	}
 
-	@Override
-	public boolean supportsCascadeDelete() {
-		return false;
-	}
 
 	@Override
 	public LockingSupport getLockingSupport() {
@@ -519,12 +495,91 @@ public class MilvusDialect extends Dialect {
 	}
 
 	@Override
+	public IdentifierHelper buildIdentifierHelper(IdentifierHelperBuildRequest request) {
+		final var builder = request.builder();
+		final var jdbcMetadata = request.jdbcMetadata();
+		final var keywordSupport = request.keywordSupport();
+		builder.setUnquotedCaseStrategy( IdentifierCaseStrategy.MIXED );
+		builder.setQuotedCaseStrategy( jdbcMetadata.getQuotedIdentifierCaseStrategy() );
+		builder.applyReservedWords( keywordSupport.getKeywords() );
+		builder.applyReservedWords(
+				jdbcMetadata.getSqlKeywords().stream()
+						.filter( keywordSupport::acceptsJdbcKeyword )
+						.toList()
+		);
+		builder.setNameQualifierSupport( request.nameQualifierSupport() );
+		return builder.build();
+	}
+
+	@Override
+	public TruncateMode truncateMode() {
+		return TruncateMode.PER_TABLE;
+	}
+
+	@Override
+	public List<String> renderCommands(TruncateRequest request) {
+		return request.tableNames().stream()
+				.map( tableName -> MilvusJsonHelper.serializeDefinition( new MilvusTruncateCollection( tableName ) ) )
+				.toList();
+	}
+
+	@Override
+	public TypeSizingProfile getTypeSizingProfile() {
+		final int maxVarcharLength = (1 << 16) - 1;
+		return TypeSizingProfile.builder( super.getTypeSizingProfile() )
+				.maxVarcharLength( maxVarcharLength )
+				.maxNVarcharLength( maxVarcharLength )
+				.maxVarbinaryLength( maxVarcharLength )
+				.build();
+	}
+
+	@Override
+	public String getQueryHintString(String query, List<String> hintList) {
+		if ( hintList == null || hintList.isEmpty() ) {
+			return query;
+		}
+		final MilvusStatementDefinition definition = MilvusJsonHelper.parseDefinition( query );
+		for ( String hint : hintList ) {
+			final int assignmentIndex = hint.indexOf( '=' );
+			if ( assignmentIndex != -1 ) {
+				if ( MilvusDatabaseHints.CONSISTENCY_LEVEL.equals( hint.substring( 0, assignmentIndex ) )
+					&& definition instanceof AbstractMilvusQuery milvusQuery ) {
+					milvusQuery.setConsistencyLevel(
+							ConsistencyLevel.valueOf( hint.substring( assignmentIndex + 1 ).toUpperCase( Locale.ROOT ) )
+					);
+				}
+			}
+		}
+		return MilvusJsonHelper.serializeDefinition( definition );
+	}
+
+	@Override
+	public ArraySupport getArraySupport() {
+		return ArraySupport.STANDARD;
+	}
+
+	@Override
+	public boolean supportsOnDeleteAction(OnDeleteAction action) {
+		return action != OnDeleteAction.CASCADE && super.supportsOnDeleteAction( action );
+	}
+
+	@Override
 	public SqlAstTranslatorFactory getSqlAstTranslatorFactory() {
 		return new StandardSqlAstTranslatorFactory() {
 			@Override
-			protected <T extends JdbcOperation> SqlAstTranslator<T> buildTranslator(
-					SessionFactoryImplementor sessionFactory, Statement statement) {
-				return new MilvusSqlAstTranslator<>( sessionFactory, statement );
+			protected <S extends Statement, O extends JdbcOperation> SqlAstTranslator<O> createTranslator(
+					SqlAstTranslationRequest<S, O> request) {
+				if ( request instanceof SqlAstTranslationRequest.ModelMutation<?> modelMutation
+						&& modelMutation.statement() instanceof TableDeleteStandard tableDelete ) {
+					// The core translator has no extension point to render standard deletes
+					@SuppressWarnings({"unchecked", "rawtypes"})
+					final SqlAstTranslationRequest<S, O> deleteRequest = (SqlAstTranslationRequest) new SqlAstTranslationRequest.ModelMutation<>(
+							modelMutation.sessionFactory(),
+							new MilvusTableDelete( tableDelete )
+					);
+					return new MilvusSqlAstTranslator<>( deleteRequest );
+				}
+				return new MilvusSqlAstTranslator<>( request );
 			}
 		};
 	}

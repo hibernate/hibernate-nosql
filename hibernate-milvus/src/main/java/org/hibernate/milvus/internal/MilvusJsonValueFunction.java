@@ -10,12 +10,12 @@ import org.hibernate.dialect.function.json.JsonPathHelper;
 import org.hibernate.dialect.function.json.JsonValueFunction;
 import org.hibernate.metamodel.mapping.JdbcMapping;
 import org.hibernate.metamodel.model.domain.ReturnableType;
-import org.hibernate.sql.ast.SqlAstTranslator;
-import org.hibernate.sql.ast.spi.SqlAppender;
-import org.hibernate.sql.ast.tree.expression.Expression;
-import org.hibernate.sql.ast.tree.expression.JsonPathPassingClause;
-import org.hibernate.sql.ast.tree.expression.JsonValueEmptyBehavior;
-import org.hibernate.sql.ast.tree.expression.JsonValueErrorBehavior;
+import org.hibernate.sql.ast.spi.translation.SqlAstTranslator;
+import org.hibernate.sql.spi.SqlAppender;
+import org.hibernate.sql.ast.spi.query.expression.Expression;
+import org.hibernate.sql.ast.spi.query.expression.JsonPathPassingClause;
+import org.hibernate.sql.ast.spi.query.expression.JsonValueEmptyBehavior;
+import org.hibernate.sql.ast.spi.query.expression.JsonValueErrorBehavior;
 import org.hibernate.type.descriptor.jdbc.JdbcType;
 import org.hibernate.type.spi.TypeConfiguration;
 

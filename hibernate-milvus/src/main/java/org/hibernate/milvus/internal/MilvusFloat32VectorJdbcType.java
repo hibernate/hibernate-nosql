@@ -39,15 +39,6 @@ public class MilvusFloat32VectorJdbcType extends ArrayJdbcType {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public <T> JavaType<T> getJdbcRecommendedJavaTypeMapping(
-			Integer precision,
-			Integer scale,
-			TypeConfiguration typeConfiguration) {
-		return (JavaType<T>) typeConfiguration.getJavaTypeRegistry().resolveDescriptor( float[].class );
-	}
-
-	@Override
 	public <X> ValueExtractor<X> getExtractor(JavaType<X> javaTypeDescriptor) {
 		return new BasicExtractor<>( javaTypeDescriptor, this ) {
 			@Override

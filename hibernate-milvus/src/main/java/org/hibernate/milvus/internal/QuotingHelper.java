@@ -4,7 +4,7 @@
  */
 package org.hibernate.milvus.internal;
 
-import org.hibernate.sql.ast.spi.SqlAppender;
+import org.hibernate.sql.spi.SqlAppender;
 
 /**
  * Helper to append JSON strings.

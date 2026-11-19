@@ -74,7 +74,7 @@ public class MilvusTest {
 	@AfterEach
 	public void cleanup(SessionFactoryScope scope) {
 		scope.inTransaction( em -> {
-			em.createSelectionQuery( "from VectorEntity" ).list().forEach( em::remove );
+			em.createSelectionQuery( "from VectorEntity", VectorEntity.class ).list().forEach( em::remove );
 		} );
 	}
 

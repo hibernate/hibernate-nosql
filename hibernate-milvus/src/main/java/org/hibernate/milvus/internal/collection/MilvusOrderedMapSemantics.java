@@ -4,6 +4,7 @@
  */
 package org.hibernate.milvus.internal.collection;
 
+import java.util.Map;
 import org.hibernate.collection.spi.AbstractMapSemantics;
 import org.hibernate.collection.spi.CollectionInitializerProducer;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -84,5 +85,17 @@ public class MilvusOrderedMapSemantics<K, V> extends AbstractMapSemantics<Linked
 	@Override
 	public Iterator<V> getElementIterator(LinkedHashMap<K,V> rawCollection) {
 		return rawCollection.values().iterator();
+	}
+
+	@Override
+	public <KK, VV> Map<KK, VV> instantiateWithElements(
+			int anticipatedSize,
+			CollectionPersister collectionDescriptor,
+			Map<? extends KK, ? extends VV> entries) {
+		final Map<KK, VV> map = anticipatedSize < 1
+				? CollectionHelper.linkedMap()
+				: CollectionHelper.linkedMapOfSize( anticipatedSize );
+		map.putAll( entries );
+		return map;
 	}
 }

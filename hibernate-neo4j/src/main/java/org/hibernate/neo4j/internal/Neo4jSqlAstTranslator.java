@@ -4,55 +4,53 @@
  */
 package org.hibernate.neo4j.internal;
 
+import org.hibernate.dialect.sql.ast.spi.ReturningRenderingPlan;
+import org.hibernate.dialect.sql.ast.spi.ReturningRenderingSupport;
+import org.hibernate.dialect.sql.ast.spi.SelectItemReferenceStrategy;
+import org.hibernate.dialect.sql.ast.spi.SetReturningFunctionRenderingSupport;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+import org.hibernate.dialect.sql.ast.spi.SubquerySupport;
+import org.hibernate.sql.ast.spi.query.from.LazyTableGroup;
 import org.hibernate.AssertionFailure;
 import org.hibernate.LockMode;
-import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.MathHelper;
-import org.hibernate.internal.util.collections.Stack;
+import org.hibernate.spi.Stack;
 import org.hibernate.metamodel.mapping.ModelPartContainer;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.query.sqm.sql.internal.SqmParameterInterpretation;
-import org.hibernate.query.sqm.sql.internal.SqmPathInterpretation;
-import org.hibernate.query.sqm.tuple.internal.AnonymousTupleTableGroupProducer;
-import org.hibernate.sql.ast.Clause;
-import org.hibernate.sql.ast.SqlAstJoinType;
-import org.hibernate.sql.ast.SqlAstNodeRenderingMode;
+import org.hibernate.sql.ast.spi.translation.Clause;
+import org.hibernate.sql.ast.spi.query.from.SqlAstJoinType;
 import org.hibernate.sql.ast.internal.TableGroupHelper;
-import org.hibernate.sql.ast.spi.AbstractSqlAstTranslator;
-import org.hibernate.sql.ast.tree.SqlAstNode;
-import org.hibernate.sql.ast.tree.Statement;
-import org.hibernate.sql.ast.tree.delete.DeleteStatement;
-import org.hibernate.sql.ast.tree.expression.ColumnReference;
-import org.hibernate.sql.ast.tree.expression.Expression;
-import org.hibernate.sql.ast.tree.expression.JdbcParameter;
-import org.hibernate.sql.ast.tree.expression.Literal;
-import org.hibernate.sql.ast.tree.expression.QueryLiteral;
-import org.hibernate.sql.ast.tree.expression.SqlTuple;
-import org.hibernate.sql.ast.tree.expression.SqlTupleContainer;
-import org.hibernate.sql.ast.tree.from.FromClause;
-import org.hibernate.sql.ast.tree.from.NamedTableReference;
-import org.hibernate.sql.ast.tree.from.TableGroup;
-import org.hibernate.sql.ast.tree.from.TableGroupJoin;
-import org.hibernate.sql.ast.tree.from.TableReference;
-import org.hibernate.sql.ast.tree.from.TableReferenceJoin;
-import org.hibernate.sql.ast.tree.insert.InsertSelectStatement;
-import org.hibernate.sql.ast.tree.predicate.BetweenPredicate;
-import org.hibernate.sql.ast.tree.predicate.BooleanExpressionPredicate;
-import org.hibernate.sql.ast.tree.predicate.InListPredicate;
-import org.hibernate.sql.ast.tree.predicate.Predicate;
-import org.hibernate.sql.ast.tree.select.QuerySpec;
-import org.hibernate.sql.ast.tree.select.SelectClause;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.ast.tree.update.Assignment;
-import org.hibernate.sql.ast.tree.update.UpdateStatement;
+import org.hibernate.dialect.sql.ast.spi.AbstractSqlAstTranslator;
+import org.hibernate.sql.ast.spi.Statement;
+import org.hibernate.sql.ast.spi.query.delete.DeleteStatement;
+import org.hibernate.sql.ast.spi.query.expression.ColumnReference;
+import org.hibernate.sql.ast.spi.query.expression.Expression;
+import org.hibernate.sql.ast.spi.query.expression.JdbcParameter;
+import org.hibernate.sql.ast.spi.query.expression.Literal;
+import org.hibernate.sql.ast.spi.query.expression.QueryLiteral;
+import org.hibernate.sql.ast.spi.query.expression.SqlTuple;
+import org.hibernate.sql.ast.spi.query.expression.SqlTupleContainer;
+import org.hibernate.sql.ast.spi.query.from.FromClause;
+import org.hibernate.sql.ast.spi.query.from.NamedTableReference;
+import org.hibernate.sql.ast.spi.query.from.TableGroup;
+import org.hibernate.sql.ast.spi.query.from.TableGroupJoin;
+import org.hibernate.sql.ast.spi.query.from.TableReference;
+import org.hibernate.sql.ast.spi.query.from.TableReferenceJoin;
+import org.hibernate.sql.ast.spi.query.predicate.BetweenPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.BooleanExpressionPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.InListPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.Predicate;
+import org.hibernate.sql.ast.spi.query.select.QuerySpec;
+import org.hibernate.sql.ast.spi.query.select.SelectClause;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
+import org.hibernate.sql.ast.spi.query.update.Assignment;
+import org.hibernate.sql.ast.spi.query.update.UpdateStatement;
 import org.hibernate.sql.exec.spi.JdbcOperation;
-import org.hibernate.sql.model.MutationOperation;
-import org.hibernate.sql.model.ast.RestrictedTableMutation;
-import org.hibernate.sql.model.internal.TableDeleteStandard;
-import org.hibernate.sql.model.internal.TableInsertCustomSql;
-import org.hibernate.sql.model.internal.TableInsertStandard;
-import org.hibernate.sql.model.internal.TableUpdateStandard;
+import org.hibernate.sql.ast.spi.model.TableDeleteStandard;
+import org.hibernate.sql.ast.spi.model.TableInsertCustomSql;
+import org.hibernate.sql.ast.spi.model.TableInsertStandard;
+import org.hibernate.sql.ast.spi.model.TableUpdateStandard;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -61,17 +59,60 @@ import java.util.List;
 import java.util.function.Function;
 
 import static org.hibernate.internal.util.StringHelper.isBlank;
-import static org.hibernate.sql.ast.tree.expression.SqlTupleContainer.getSqlTuple;
+import static org.hibernate.sql.ast.spi.query.expression.SqlTupleContainer.getSqlTuple;
 
 public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlAstTranslator<T> {
 
-	public Neo4jSqlAstTranslator(SessionFactoryImplementor sessionFactory, Statement statement) {
-		super( sessionFactory, statement );
+	/**
+	 * Alias used to qualify the columns of the returning clause. The base translator renders the
+	 * returning clause as {@code returning <columns>} once the mutation itself was rendered. Cypher
+	 * requires {@code return <alias>.<column>} instead, which {@link #appendSql(String)} adapts.
+	 */
+	private String returningAlias;
+
+	public Neo4jSqlAstTranslator(SqlAstTranslationRequest<? extends Statement, T> request) {
+		super( request );
 	}
 
 	@Override
+	public void appendSql(String fragment) {
+		if ( returningAlias != null ) {
+			if ( " returning ".equals( fragment ) ) {
+				super.appendSql( " return " );
+				return;
+			}
+			else if ( !fragment.isEmpty() && !COMMA_SEPARATOR.equals( fragment ) ) {
+				super.appendSql( returningAlias + "." + fragment );
+				return;
+			}
+		}
+		super.appendSql( fragment );
+	}
+
+	@Override
+	protected ReturningRenderingSupport getReturningRenderingSupport() {
+		return request -> request.returningColumns().isEmpty()
+				? new ReturningRenderingPlan.None()
+				: new ReturningRenderingPlan.Clause();
+	}
+
+	@Override
+	protected SetReturningFunctionRenderingSupport getSetReturningFunctionRenderingSupport() {
+		return request -> {
+			throw new UnsupportedOperationException();
+		};
+	}
+
+	@Override
+	protected SelectItemReferenceStrategy getGroupBySelectItemReferenceStrategy() {
+		return SelectItemReferenceStrategy.ALIAS;
+	}
+
+
+
+	@Override
 	public void visitQueryClauses(QuerySpec querySpec) {
-		visitFromClause( querySpec.getFromClause() ); // match
+		renderMatchClause( querySpec.getFromClause() ); // match
 		if ( hasWhere( querySpec.getWhereClauseRestrictions() ) && querySpec.getFromClause().hasJoins() ) {
 			// A previous join might have scoped a where clause to that match, so we need to reset the scope
 			appendSql( " with *" );
@@ -79,25 +120,21 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		visitWhereClause( querySpec.getWhereClauseRestrictions() );
 		super.visitForUpdateClause( querySpec );
 		visitSelectClause( querySpec.getSelectClause() ); // return
-		visitGroupByClause( querySpec, getDialect().getGroupBySelectItemReferenceStrategy() );
+		visitGroupByClause( querySpec, getGroupBySelectItemReferenceStrategy() );
 		visitHavingClause( querySpec.getHavingClauseRestrictions() );
 		visitOrderBy( querySpec.getSortSpecifications() );
 		visitOffsetFetchClause( querySpec );
 	}
 
-	@Override
-	public void visitFromClause(FromClause fromClause) {
-		if ( fromClause == null || fromClause.getRoots().isEmpty() ) {
-//			throw new UnsupportedOperationException( "Neo4j doesn't support an empty from clause" );
-		}
-		else {
+
+	private void renderMatchClause(FromClause fromClause) {
+		if ( hasFrom( fromClause ) ) {
 			appendSql( "match " );
-			renderFromClauseSpaces( fromClause );
+			renderMatchSpaces( fromClause );
 		}
 	}
 
-	@Override
-	protected void renderFromClauseSpaces(FromClause fromClause) {
+	private void renderMatchSpaces(FromClause fromClause) {
 		try {
 			getCurrentClauseStack().push( Clause.FROM );
 			String separator = NO_SEPARATOR;
@@ -114,24 +151,24 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		if ( root.isVirtual() ) {
 			for ( TableGroupJoin tableGroupJoin : root.getTableGroupJoins() ) {
 				addAdditionalWherePredicate( tableGroupJoin.getPredicate() );
-				renderFromClauseRoot( tableGroupJoin.getJoinedGroup(), separator );
+				separator = renderFromClauseRoot( tableGroupJoin.getJoinedGroup(), separator );
 			}
 			for ( TableGroupJoin tableGroupJoin : root.getNestedTableGroupJoins() ) {
 				addAdditionalWherePredicate( tableGroupJoin.getPredicate() );
-				renderFromClauseRoot( tableGroupJoin.getJoinedGroup(), separator );
+				separator = renderFromClauseRoot( tableGroupJoin.getJoinedGroup(), separator );
 			}
 		}
 		else if ( root.isInitialized() ) {
 			appendSql( separator );
 			renderRootTableGroup( root, null );
+			separator = COMMA_SEPARATOR;
 		}
-		return ",";
+		return separator;
 	}
 
-	@Override
 	protected boolean renderNamedTableReference(NamedTableReference tableReference, LockMode lockMode) {
 		appendSql( '(' );
-		renderTableReferenceIdentificationVariable( tableReference );
+		appendSql( getTableAlias( tableReference ) );
 		appendSql( ':' );
 		appendSql( tableReference.getTableExpression() );
 		appendSql( ')' );
@@ -144,25 +181,18 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		// No-op, handled in visitQueryClauses
 	}
 
-	@Override
-	public void visitSelectClause(SelectClause selectClause) {
-		getCurrentClauseStack().push( Clause.SELECT );
 
-		try {
-			appendSql( " return " );
-			if ( selectClause.isDistinct() ) {
-				appendSql( "distinct " );
-			}
-			visitSqlSelections( selectClause );
-			renderVirtualSelections( selectClause );
+	@Override
+	protected void renderSelectClause(SelectClause selectClause) {
+		appendSql( " return " );
+		if ( selectClause.isDistinct() ) {
+			appendSql( "distinct " );
 		}
-		finally {
-			getCurrentClauseStack().pop();
-		}
+		renderSelectItems( selectClause );
+		renderVirtualSelections( selectClause );
 	}
 
-	@Override
-	protected void renderTableGroupJoin(TableGroupJoin tableGroupJoin, List<TableGroupJoin> tableGroupJoinCollector) {
+	private void renderTableGroupJoin(TableGroupJoin tableGroupJoin, List<TableGroupJoin> tableGroupJoinCollector) {
 		appendSql( WHITESPACE );
 		if ( tableGroupJoin.getJoinType() != SqlAstJoinType.INNER ) {
 			appendSql( "optional " );
@@ -189,8 +219,7 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		}
 	}
 
-	@Override
-	protected void renderJoinedTableGroup(TableGroupJoin tableGroupJoin, Predicate predicate, List<TableGroupJoin> tableGroupJoinCollector) {
+	private void renderJoinedTableGroup(TableGroupJoin tableGroupJoin, Predicate predicate, List<TableGroupJoin> tableGroupJoinCollector) {
 		final LockMode lockModeToApply = determineJoinedTableGroupLockMode( tableGroupJoin );
 		var tableGroup = tableGroupJoin.getJoinedGroup();
 
@@ -273,7 +302,7 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		if ( predicate != null && swappedJoinIndex == -1 ) {
 			renderJoinPredicate( predicate );
 		}
-		if ( tableGroup.isLateral() && !getDialect().supportsLateral() ) {
+		if ( tableGroup.isLateral() && !getDialect().getSubquerySupport().supports( SubquerySupport.Feature.LATERAL ) ) {
 			final Predicate lateralEmulationPredicate = determineLateralEmulationPredicate( tableGroup );
 			if ( lateralEmulationPredicate != null ) {
 				if ( predicate == null ) {
@@ -311,6 +340,105 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		}
 	}
 
+	private void renderRootTableGroup(TableGroup tableGroup, List<TableGroupJoin> tableGroupJoinCollector) {
+		final LockMode effectiveLockMode = determineRootTableGroupLockMode( tableGroup );
+		renderPrimaryTableReference( tableGroup, effectiveLockMode );
+
+		if ( tableGroup.isLateral() && !getDialect().getSubquerySupport().supports( SubquerySupport.Feature.LATERAL ) ) {
+			addAdditionalWherePredicate( determineLateralEmulationPredicate( tableGroup ) );
+		}
+
+		final LockMode lockMode = getEffectiveLockMode();
+		renderTableReferenceJoins( tableGroup, lockMode );
+		processNestedTableGroupJoins( tableGroup, tableGroupJoinCollector );
+		if ( tableGroupJoinCollector != null ) {
+			tableGroupJoinCollector.addAll( tableGroup.getTableGroupJoins() );
+		}
+		else {
+			processTableGroupJoins( tableGroup );
+		}
+		if ( tableGroup.getModelPart() instanceof EntityPersister persister ) {
+			final String[] querySpaces = (String[]) persister.getQuerySpaces();
+			for ( int i = 0; i < querySpaces.length; i++ ) {
+				registerAffectedTable( querySpaces[i] );
+			}
+		}
+	}
+
+	private LockMode determineRootTableGroupLockMode(TableGroup tableGroup) {
+		if ( getLockingClauseStrategy() != null ) {
+			if ( getCurrentQueryPart() == getLockingTarget() ) {
+				if ( getLockingClauseStrategy().registerRoot( tableGroup ) ) {
+					return getEffectiveLockMode( tableGroup.getSourceAlias() );
+				}
+			}
+		}
+		return LockMode.NONE;
+	}
+
+	private void renderPrimaryTableReference(TableGroup tableGroup, LockMode lockMode) {
+		final TableReference tableReference = tableGroup.getPrimaryTableReference();
+		if ( tableReference instanceof NamedTableReference namedTableReference ) {
+			renderNamedTableReference( namedTableReference, lockMode );
+		}
+		else {
+			throw new UnsupportedOperationException( "Neo4j does not support table references of type " + tableReference.getClass().getSimpleName() );
+		}
+	}
+
+	private boolean hasNestedTableGroupsToRender(List<TableGroupJoin> nestedTableGroupJoins) {
+		for ( TableGroupJoin nestedTableGroupJoin : nestedTableGroupJoins ) {
+			final TableGroup joinedGroup = nestedTableGroupJoin.getJoinedGroup();
+			if ( !joinedGroup.isInitialized() ) {
+				continue;
+			}
+			if ( joinedGroup.isVirtual() ) {
+				if ( hasNestedTableGroupsToRender( joinedGroup.getNestedTableGroupJoins() ) ) {
+					return true;
+				}
+			}
+			else {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void processTableGroupJoins(TableGroup source) {
+		source.visitTableGroupJoins( tableGroupJoin -> processTableGroupJoin( tableGroupJoin, null ) );
+	}
+
+	private void processNestedTableGroupJoins(TableGroup source, List<TableGroupJoin> tableGroupJoinCollector) {
+		source.visitNestedTableGroupJoins( tableGroupJoin -> processTableGroupJoin( tableGroupJoin, tableGroupJoinCollector ) );
+	}
+
+	private void processTableGroupJoin(TableGroupJoin tableGroupJoin, List<TableGroupJoin> tableGroupJoinCollector) {
+		final TableGroup joinedGroup = tableGroupJoin.getJoinedGroup();
+
+		if ( joinedGroup.isVirtual() ) {
+			processNestedTableGroupJoins( joinedGroup, tableGroupJoinCollector );
+			if ( tableGroupJoinCollector != null ) {
+				tableGroupJoinCollector.addAll( joinedGroup.getTableGroupJoins() );
+			}
+			else {
+				processTableGroupJoins( joinedGroup );
+			}
+		}
+		else if ( joinedGroup.isInitialized() ) {
+			renderTableGroupJoin( tableGroupJoin, tableGroupJoinCollector );
+		}
+		// A lazy table group, even if uninitialized, might contain table group joins
+		else if ( joinedGroup instanceof LazyTableGroup ) {
+			processNestedTableGroupJoins( joinedGroup, tableGroupJoinCollector );
+			if ( tableGroupJoinCollector != null ) {
+				tableGroupJoinCollector.addAll( joinedGroup.getTableGroupJoins() );
+			}
+			else {
+				processTableGroupJoins( joinedGroup );
+			}
+		}
+	}
+
 	private QuerySpec getLockingTarget() {
 		// todo: temporary, until we add the getter to ORM
 		try {
@@ -335,8 +463,11 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		return LockMode.NONE;
 	}
 
-	@Override
-	protected void renderTableReferenceJoins(TableGroup tableGroup, LockMode lockMode, int swappedJoinIndex, boolean forceLeftJoin) {
+	private void renderTableReferenceJoins(TableGroup tableGroup, LockMode lockMode) {
+		renderTableReferenceJoins( tableGroup, lockMode, -1, false );
+	}
+
+	private void renderTableReferenceJoins(TableGroup tableGroup, LockMode lockMode, int swappedJoinIndex, boolean forceLeftJoin) {
 		final List<TableReferenceJoin> joins = tableGroup.getTableReferenceJoins();
 		if ( joins == null || joins.isEmpty() ) {
 			return;
@@ -389,8 +520,7 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 	// ~ MUTATION OPERATIONS
 
 	@Override
-	public void visitStandardTableInsert(TableInsertStandard tableInsert) {
-		getCurrentClauseStack().push( Clause.INSERT );
+	protected void renderStandardTableInsert(TableInsertStandard tableInsert) {
 		appendSql( "create " );
 		appendSql( OPEN_PARENTHESIS );
 
@@ -412,17 +542,10 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		} );
 		appendSql( "})" );
 
-		if ( tableInsert.getNumberOfReturningColumns() > 0 ) {
-			visitReturningColumns( tableInsert.getReturningColumns(), "n" );
-		}
-
 		getCurrentClauseStack().pop();
+		returningAlias = "n";
 	}
 
-	@Override
-	public void visitInsertStatement(InsertSelectStatement statement) {
-		throw new UnsupportedOperationException( "Neo4j does not support insert-select statements" );
-	}
 
 	@Override
 	public void visitCustomTableInsert(TableInsertCustomSql tableInsert) {
@@ -430,20 +553,12 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 	}
 
 	@Override
-	public void visitStandardTableUpdate(TableUpdateStandard tableUpdate) {
-		getCurrentClauseStack().push( Clause.UPDATE );
-		try {
-			visitTableUpdate( tableUpdate, tableUpdate.getWhereFragment() );
-			if ( tableUpdate.getNumberOfReturningColumns() > 0 ) {
-				visitReturningColumns( tableUpdate.getReturningColumns(), "n" );
-			}
-		}
-		finally {
-			getCurrentClauseStack().pop();
-		}
+	protected void renderStandardTableUpdate(TableUpdateStandard tableUpdate) {
+		visitTableUpdate( tableUpdate, tableUpdate.getWhereFragment() );
+		returningAlias = "n";
 	}
 
-	private void visitTableUpdate(RestrictedTableMutation<? extends MutationOperation> tableUpdate, String whereFragment) {
+	private void visitTableUpdate(TableUpdateStandard tableUpdate, String whereFragment) {
 		applySqlComment( tableUpdate.getMutationComment() );
 
 		appendSql( "match(n:" );
@@ -517,7 +632,7 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		visitWhereClause( statement.getRestriction() );
 		renderSetClause( statement.getAssignments() );
 		renderFromClauseAfterUpdateSet( statement );
-		visitReturningColumns( statement.getReturningColumns(), getTableAlias( statement.getTargetTable() ) );
+		returningAlias = getTableAlias( statement.getTargetTable() );
 	}
 
 	static String getTableAlias(TableReference tableReference) {
@@ -542,24 +657,15 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 
 	@Override
 	protected void renderDmlTargetTableExpression(NamedTableReference tableReference) {
-		renderTableReferenceIdentificationVariable( tableReference );
-		appendSql( ':' );
-		super.renderDmlTargetTableExpression( tableReference );
-	}
-
-	@Override
-	protected void renderTableReferenceIdentificationVariable(TableReference tableReference) {
 		appendSql( getTableAlias( tableReference ) );
+		appendSql( ':' );
+		appendSql( tableReference.getTableExpression() );
+		registerAffectedTable( tableReference );
 	}
 
+
 	@Override
-	protected void visitSetAssignment(Assignment assignment) {
-		if ( assignment.getAssignable() instanceof SqmPathInterpretation<?> sqmPathInterpretation ) {
-			final String affectedTableName = sqmPathInterpretation.getAffectedTableName();
-			if ( affectedTableName != null ) {
-				addAffectedTableName( affectedTableName );
-			}
-		}
+	protected void renderSetAssignment(Assignment assignment) {
 		final List<ColumnReference> columnReferences = assignment.getAssignable().getColumnReferences();
 		final Expression assignedValue = assignment.getAssignedValue();
 		if ( columnReferences.size() == 1 ) {
@@ -592,19 +698,12 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		renderFromClauseJoiningDmlTargetReference( statement );
 	}
 
-	protected void applySqlComment(String comment) {
 
-		if ( getSessionFactory().getSessionFactoryOptions().isCommentsEnabled() ) {
-			if ( comment != null ) {
-				appendSql( "/* " );
-				appendSql( Dialect.escapeComment( comment ) );
-				appendSql( " */" );
-			}
-		}
-	}
-
-	@Override
-	public void visitStandardTableDelete(TableDeleteStandard tableDelete) {
+	/**
+	 * Renders a standard table delete. The base translator does not offer a hook for this, which is
+	 * why {@link Neo4jTableDelete} dispatches directly to this method.
+	 */
+	void renderStandardTableDelete(TableDeleteStandard tableDelete) {
 		getCurrentClauseStack().push( Clause.DELETE );
 		try {
 			applySqlComment( tableDelete.getMutationComment() );
@@ -675,7 +774,7 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 			appendSql( String.format( " with %s, properties(%s) as returning_properties", tableAlias, tableAlias ) );
 		}
 		appendSql( " delete " + tableAlias );
-		visitReturningColumns( statement.getReturningColumns(), "returning_properties" );
+		returningAlias = "returning_properties";
 	}
 
 	@Override
@@ -692,22 +791,7 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		}
 	}
 
-	protected void visitReturningColumns(List<ColumnReference> returningColumns, String tableAlias) {
-		if ( !returningColumns.isEmpty() ) {
-			appendSql( " return " );
-			String separator = "";
-			for ( ColumnReference columnReference : returningColumns ) {
-				appendSql( separator );
-				appendSql( tableAlias + "." + columnReference.getColumnExpression() );
-				separator = COMMA_SEPARATOR;
-			}
-		}
-	}
 
-	@Override
-	public void renderNamedSetReturningFunction(String functionName, List<? extends SqlAstNode> sqlAstArguments, AnonymousTupleTableGroupProducer tupleType, String tableIdentifierVariable, SqlAstNodeRenderingMode argumentRenderingMode) {
-		throw new UnsupportedOperationException();
-	}
 
 	@Override
 	public void visitBetweenPredicate(BetweenPredicate betweenPredicate) {
@@ -764,7 +848,7 @@ public class Neo4jSqlAstTranslator<T extends JdbcOperation> extends AbstractSqlA
 		int bindValueCount = listExpressions.size();
 		int bindValueCountWithPadding = bindValueCount;
 
-		int inExprLimit = getDialect().getInExpressionCountLimit();
+		int inExprLimit = getDialect().getParameterLimits().inExpressionCountLimit();
 
 		if ( getSessionFactory().getSessionFactoryOptions().inClauseParameterPaddingEnabled() ) {
 			bindValueCountWithPadding = addPadding( bindValueCount, inExprLimit );

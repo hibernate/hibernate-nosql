@@ -4,6 +4,7 @@
  */
 package org.hibernate.milvus.internal.graph;
 
+import org.hibernate.engine.spi.FetchOptions;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.metamodel.internal.StandardEmbeddableInstantiator;
 import org.hibernate.metamodel.mapping.EmbeddableValuedModelPart;
@@ -31,6 +32,7 @@ public class EntitySelectFetchInitializerBuilder {
 			NavigablePath navigablePath,
 			boolean selectByUniqueKey,
 			boolean affectedByFilter,
+			FetchOptions fetchOptions,
 			AssemblerCreationState creationState) {
 		if ( selectByUniqueKey ) {
 			return new EntitySelectFetchByUniqueKeyInitializer(
@@ -76,6 +78,7 @@ public class EntitySelectFetchInitializerBuilder {
 							entityPersister,
 							keyResult,
 							affectedByFilter,
+							fetchOptions,
 							creationState
 					);
 				}
@@ -87,6 +90,7 @@ public class EntitySelectFetchInitializerBuilder {
 							entityPersister,
 							keyResult,
 							affectedByFilter,
+							fetchOptions,
 							creationState
 					);
 				}
@@ -98,6 +102,7 @@ public class EntitySelectFetchInitializerBuilder {
 						entityPersister,
 						keyResult,
 						affectedByFilter,
+						fetchOptions,
 						creationState
 				);
 		}

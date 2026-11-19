@@ -4,16 +4,27 @@
  */
 package org.hibernate.neo4j;
 
+import org.hibernate.neo4j.internal.Neo4jTableDelete;
+import org.hibernate.sql.ast.spi.model.TableDeleteStandard;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import org.hibernate.dialect.array.spi.ArraySupport;
+import org.hibernate.dialect.lock.spi.LockingClauseRequest;
+import org.hibernate.dialect.schema.spi.TruncateMode;
+import org.hibernate.dialect.schema.spi.TruncateRequest;
+import org.hibernate.dialect.sql.ast.spi.MutationKind;
+import org.hibernate.dialect.sql.ast.spi.MutationSyntaxCapability;
+import org.hibernate.dialect.sql.ast.spi.MutationSyntaxSupport;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
+import org.hibernate.dialect.temporaltype.spi.CurrentTemporalSupport;
 import jakarta.persistence.TemporalType;
-import jakarta.persistence.Timeout;
-import org.hibernate.LockOptions;
 import org.hibernate.boot.model.FunctionContributions;
 import org.hibernate.boot.model.TypeContributions;
 import org.hibernate.dialect.DatabaseVersion;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.DmlTargetColumnQualifierSupport;
-import org.hibernate.dialect.RowLockStrategy;
-import org.hibernate.dialect.SelectItemReferenceStrategy;
+import org.hibernate.dialect.sql.ast.spi.DmlTargetColumnQualifierSupport;
+import org.hibernate.dialect.lock.spi.RowLockStrategy;
 import org.hibernate.dialect.function.CommonFunctionFactory;
 import org.hibernate.dialect.lock.PessimisticLockStyle;
 import org.hibernate.dialect.lock.internal.LockingSupportSimple;
@@ -21,12 +32,10 @@ import org.hibernate.dialect.lock.spi.ConnectionLockTimeoutStrategy;
 import org.hibernate.dialect.lock.spi.LockTimeoutType;
 import org.hibernate.dialect.lock.spi.LockingSupport;
 import org.hibernate.dialect.lock.spi.OuterJoinLockingType;
-import org.hibernate.dialect.unique.UniqueDelegate;
+import org.hibernate.dialect.unique.spi.UniqueDelegate;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.exception.LockTimeoutException;
 import org.hibernate.exception.spi.SQLExceptionConversionDelegate;
-import org.hibernate.internal.util.StringHelper;
 import org.hibernate.mapping.Table;
 import org.hibernate.neo4j.internal.InetAsVarcharJdbcType;
 import org.hibernate.neo4j.internal.IsoDateTimeUtils;
@@ -50,12 +59,12 @@ import org.hibernate.query.sqm.produce.function.FunctionParameterType;
 import org.hibernate.query.sqm.produce.function.StandardFunctionArgumentTypeResolvers;
 import org.hibernate.query.sqm.produce.function.StandardFunctionReturnTypeResolvers;
 import org.hibernate.service.ServiceRegistry;
-import org.hibernate.sql.ast.SqlAstNodeRenderingMode;
-import org.hibernate.sql.ast.SqlAstTranslator;
-import org.hibernate.sql.ast.SqlAstTranslatorFactory;
-import org.hibernate.sql.ast.spi.SqlAppender;
-import org.hibernate.sql.ast.spi.StandardSqlAstTranslatorFactory;
-import org.hibernate.sql.ast.tree.Statement;
+import org.hibernate.sql.ast.spi.translation.SqlAstNodeRenderingMode;
+import org.hibernate.sql.ast.spi.translation.SqlAstTranslator;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslatorFactory;
+import org.hibernate.sql.spi.SqlAppender;
+import org.hibernate.dialect.sql.ast.spi.StandardSqlAstTranslatorFactory;
+import org.hibernate.sql.ast.spi.Statement;
 import org.hibernate.sql.exec.spi.JdbcOperation;
 import org.hibernate.tool.schema.spi.Exporter;
 import org.hibernate.type.BasicArrayType;
@@ -83,7 +92,7 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import static org.hibernate.internal.util.JdbcExceptionHelper.extractSqlState;
+import static org.hibernate.jdbc.spi.JdbcExceptionHelper.extractSqlState;
 import static org.hibernate.type.SqlTypes.BIGINT;
 import static org.hibernate.type.SqlTypes.BOOLEAN;
 import static org.hibernate.type.SqlTypes.CHAR;
@@ -130,7 +139,29 @@ public class Neo4jDialect extends Dialect {
 			LockTimeoutType.NONE,
 			OuterJoinLockingType.FULL,
 			ConnectionLockTimeoutStrategy.NONE
-	);
+	) {
+		@Override
+		public String render(LockingClauseRequest request) {
+			final StringBuilder sb = new StringBuilder();
+			final Set<String> aliases = new LinkedHashSet<>();
+			for ( LockingClauseRequest.Target target : request.targets() ) {
+				if ( target instanceof LockingClauseRequest.TableTarget tableTarget ) {
+					aliases.add( tableTarget.tableAlias() );
+				}
+				else if ( target instanceof LockingClauseRequest.ColumnTarget columnTarget ) {
+					aliases.add( columnTarget.tableAlias() );
+				}
+			}
+			for ( String alias : aliases ) {
+				sb.append( " set " )
+						.append( alias )
+						.append( "._dummy_=true remove " )
+						.append( alias )
+						.append( "._dummy_" );
+			}
+			return sb.toString();
+		}
+	};
 
 	private final UniqueDelegate uniqueDelegate = new Neo4jUniqueDelegate( this );
 
@@ -154,7 +185,6 @@ public class Neo4jDialect extends Dialect {
 	public Neo4jDialect(DialectResolutionInfo info, Neo4jServerConfiguration serverConfiguration) {
 		super( serverConfiguration.getDatabaseVersion() );
 		this.enterpriseEdition = serverConfiguration.isEnterpriseEdition();
-		registerKeywords( info );
 	}
 
 	@Override
@@ -354,11 +384,6 @@ public class Neo4jDialect extends Dialect {
 	}
 
 	@Override
-	public boolean supportsStandardArrays() {
-		return true;
-	}
-
-	@Override
 	public String getArrayTypeName(String javaElementTypeName, String elementTypeName, Integer maxLength) {
 		return "list<" + elementTypeName + ">";
 	}
@@ -399,59 +424,75 @@ public class Neo4jDialect extends Dialect {
 	}
 
 	@Override
-	public SelectItemReferenceStrategy getGroupBySelectItemReferenceStrategy() {
-		return SelectItemReferenceStrategy.ALIAS;
+	public ArraySupport getArraySupport() {
+		return ArraySupport.STANDARD;
 	}
 
 	@Override
-	public String getForUpdateString() {
-		return "";
+	public boolean supportsAlterTableConstraints() {
+		return false;
 	}
 
 	@Override
-	public String getReadLockString(String aliases, Timeout timeout) {
-		return getWriteLockString( aliases, timeout );
+	public MutationSyntaxSupport getMutationSyntaxSupport() {
+		return MutationSyntaxSupport.of( MutationKind.UPDATE, MutationSyntaxCapability.FROM_CLAUSE );
 	}
 
 	@Override
-	public String getWriteLockString(String aliases, Timeout timeout) {
-		return getForUpdateString( aliases );
+	public TruncateMode truncateMode() {
+		return TruncateMode.MULTI_TABLE;
 	}
 
 	@Override
-	public String getForUpdateString(String aliases, LockOptions lockOptions) {
-		return switch ( lockOptions.getLockMode() ) {
-			case READ, PESSIMISTIC_READ, WRITE, PESSIMISTIC_WRITE, UPGRADE_SKIPLOCKED, UPGRADE_NOWAIT -> getForUpdateString( aliases );
-			default -> "";
-		};
-	}
-
-	@Override
-	public String getForUpdateString(String aliases) {
-		final String[] aliasesArray = StringHelper.split( ",", aliases );
-		if ( aliasesArray.length == 0 ) {
-			return "";
+	public List<String> renderCommands(TruncateRequest request) {
+		if ( request.tableNames().isEmpty() ) {
+			return List.of();
 		}
-		else {
-			final StringBuilder sb = new StringBuilder();
-			for ( String alias : aliasesArray ) {
-				sb.append( " set " );
-				sb.append( alias );
-				sb.append( "._dummy_=true remove " );
-				sb.append( alias );
-				sb.append( "._dummy_" );
+		return List.of( "match(n:" + String.join( "|", request.tableNames() ) + ") detach delete n" );
+	}
+
+	@Override
+	public CurrentTemporalSupport getCurrentTemporalSupport() {
+		return new CurrentTemporalSupport() {
+			@Override
+			public String currentDate() {
+				return "date()";
 			}
-			return sb.toString();
-		}
+
+			@Override
+			public String currentTime() {
+				return "localtime()";
+			}
+
+			@Override
+			public String currentTimestamp() {
+				return "localdatetime()";
+			}
+
+			@Override
+			public String currentTimestampWithTimeZone() {
+				return "datetime()";
+			}
+		};
 	}
 
 	@Override
 	public SqlAstTranslatorFactory getSqlAstTranslatorFactory() {
 		return new StandardSqlAstTranslatorFactory() {
 			@Override
-			protected <T extends JdbcOperation> SqlAstTranslator<T> buildTranslator(
-					SessionFactoryImplementor sessionFactory, Statement statement) {
-				return new Neo4jSqlAstTranslator<>( sessionFactory, statement );
+			protected <S extends Statement, O extends JdbcOperation> SqlAstTranslator<O> createTranslator(
+					SqlAstTranslationRequest<S, O> request) {
+				if ( request instanceof SqlAstTranslationRequest.ModelMutation<?> modelMutation
+						&& modelMutation.statement() instanceof TableDeleteStandard tableDelete ) {
+					// The core translator has no extension point to render standard deletes
+					@SuppressWarnings({"unchecked", "rawtypes"})
+					final SqlAstTranslationRequest<S, O> deleteRequest = (SqlAstTranslationRequest) new SqlAstTranslationRequest.ModelMutation<>(
+							modelMutation.sessionFactory(),
+							new Neo4jTableDelete( tableDelete )
+					);
+					return new Neo4jSqlAstTranslator<>( deleteRequest );
+				}
+				return new Neo4jSqlAstTranslator<>( request );
 			}
 		};
 	}
@@ -481,53 +522,8 @@ public class Neo4jDialect extends Dialect {
 	}
 
 	@Override
-	public boolean canBatchTruncate() {
-		return true;
-	}
-
-	@Override
-	public String getTruncateTableStatement(String tableName) {
-		return "match(n:" + tableName + ") detach delete n";
-	}
-
-	@Override
-	public String[] getTruncateTableStatements(String[] tableNames) {
-		return new String[] {"match(n:" + String.join( "|", tableNames ) + ") detach delete n"};
-	}
-
-	@Override
-	public boolean hasAlterTable() {
-		return false;
-	}
-
-	@Override
-	public boolean supportsFromClauseInUpdate() {
-		return true;
-	}
-
-	@Override
 	public UniqueDelegate getUniqueDelegate() {
 		return uniqueDelegate;
-	}
-
-	@Override
-	public String currentDate() {
-		return "date()";
-	}
-
-	@Override
-	public String currentTime() {
-		return "localtime()";
-	}
-
-	@Override
-	public String currentTimestamp() {
-		return "localdatetime()";
-	}
-
-	@Override
-	public String currentTimestampWithTimeZone() {
-		return "datetime()";
 	}
 
 	@Override
@@ -646,12 +642,12 @@ public class Neo4jDialect extends Dialect {
 				break;
 			case TIME:
 				appender.appendSql( "local_time(\"" );
-				appendAsTime( appender, temporalAccessor, supportsTemporalLiteralOffset(), jdbcTimeZone );
+				appendAsTime( appender, temporalAccessor, false, jdbcTimeZone );
 				appender.appendSql( "\")" );
 				break;
 			case TIMESTAMP:
 				appender.appendSql( "datetime(\"" );
-				IsoDateTimeUtils.appendAsTimestampWithNanos( appender, temporalAccessor, supportsTemporalLiteralOffset(), jdbcTimeZone );
+				IsoDateTimeUtils.appendAsTimestampWithNanos( appender, temporalAccessor, false, jdbcTimeZone );
 				appender.appendSql( "\")" );
 				break;
 			default:

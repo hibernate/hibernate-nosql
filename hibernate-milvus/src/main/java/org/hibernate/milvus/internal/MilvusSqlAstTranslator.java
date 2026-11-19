@@ -4,15 +4,17 @@
  */
 package org.hibernate.milvus.internal;
 
-import io.milvus.v2.common.ConsistencyLevel;
+import org.hibernate.AssertionFailure;
+import org.hibernate.dialect.sql.ast.spi.ReturningRenderingPlan;
+import org.hibernate.dialect.sql.ast.spi.ReturningRenderingSupport;
+import org.hibernate.dialect.sql.ast.spi.SetReturningFunctionRenderingSupport;
+import org.hibernate.dialect.sql.ast.spi.SqlAstTranslationRequest;
 import io.milvus.v2.common.IndexParam;
-import org.hibernate.LockMode;
 import org.hibernate.Locking;
-import org.hibernate.dialect.SelectItemReferenceStrategy;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.dialect.sql.ast.spi.SelectItemReferenceStrategy;
 import org.hibernate.internal.util.MathHelper;
 import org.hibernate.internal.util.QuotingHelper;
-import org.hibernate.internal.util.collections.Stack;
+import org.hibernate.spi.Stack;
 import org.hibernate.metamodel.mapping.DiscriminatorMapping;
 import org.hibernate.metamodel.mapping.EntityMappingType;
 import org.hibernate.metamodel.mapping.JdbcMapping;
@@ -21,7 +23,6 @@ import org.hibernate.metamodel.mapping.ModelPartContainer;
 import org.hibernate.metamodel.mapping.PluralAttributeMapping;
 import org.hibernate.metamodel.mapping.SelectableMapping;
 import org.hibernate.metamodel.mapping.ValuedModelPart;
-import org.hibernate.milvus.MilvusDatabaseHints;
 import org.hibernate.milvus.MilvusDialect;
 import org.hibernate.milvus.jdbc.AbstractMilvusCollectionStatement;
 import org.hibernate.milvus.jdbc.AbstractMilvusQuery;
@@ -43,52 +44,43 @@ import org.hibernate.milvus.jdbc.MilvusStatementDefinition;
 import org.hibernate.milvus.jdbc.MilvusStringValue;
 import org.hibernate.milvus.jdbc.MilvusTypedValue;
 import org.hibernate.milvus.jdbc.MilvusUpsert;
-import org.hibernate.persister.internal.SqlFragmentPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.SqlFragmentPredicate;
 import org.hibernate.query.SortDirection;
 import org.hibernate.query.common.FetchClauseType;
-import org.hibernate.query.spi.QueryOptions;
 import org.hibernate.query.sqm.ComparisonOperator;
 import org.hibernate.query.sqm.sql.internal.BasicValuedPathInterpretation;
 import org.hibernate.query.sqm.sql.internal.SqmParameterInterpretation;
-import org.hibernate.query.sqm.tree.expression.Conversion;
-import org.hibernate.query.sqm.tuple.internal.AnonymousTupleTableGroupProducer;
-import org.hibernate.sql.ast.Clause;
-import org.hibernate.sql.ast.SqlAstNodeRenderingMode;
-import org.hibernate.sql.ast.spi.AbstractSqlAstTranslator;
-import org.hibernate.sql.ast.tree.MutationStatement;
-import org.hibernate.sql.ast.tree.SqlAstNode;
-import org.hibernate.sql.ast.tree.Statement;
-import org.hibernate.sql.ast.tree.cte.CteContainer;
-import org.hibernate.sql.ast.tree.delete.DeleteStatement;
-import org.hibernate.sql.ast.tree.expression.*;
-import org.hibernate.sql.ast.tree.from.FromClause;
-import org.hibernate.sql.ast.tree.from.FunctionTableReference;
-import org.hibernate.sql.ast.tree.from.NamedTableReference;
-import org.hibernate.sql.ast.tree.from.QueryPartTableReference;
-import org.hibernate.sql.ast.tree.from.TableGroup;
-import org.hibernate.sql.ast.tree.from.TableReferenceJoin;
-import org.hibernate.sql.ast.tree.from.ValuesTableReference;
-import org.hibernate.sql.ast.tree.insert.InsertSelectStatement;
-import org.hibernate.sql.ast.tree.insert.Values;
-import org.hibernate.sql.ast.tree.predicate.BetweenPredicate;
-import org.hibernate.sql.ast.tree.predicate.BooleanExpressionPredicate;
-import org.hibernate.sql.ast.tree.predicate.ComparisonPredicate;
-import org.hibernate.sql.ast.tree.predicate.ExistsPredicate;
-import org.hibernate.sql.ast.tree.predicate.FilterPredicate;
-import org.hibernate.sql.ast.tree.predicate.InArrayPredicate;
-import org.hibernate.sql.ast.tree.predicate.InListPredicate;
-import org.hibernate.sql.ast.tree.predicate.InSubQueryPredicate;
-import org.hibernate.sql.ast.tree.predicate.LikePredicate;
-import org.hibernate.sql.ast.tree.predicate.NullnessPredicate;
-import org.hibernate.sql.ast.tree.predicate.Predicate;
-import org.hibernate.sql.ast.tree.predicate.ThruthnessPredicate;
-import org.hibernate.sql.ast.tree.select.QueryGroup;
-import org.hibernate.sql.ast.tree.select.QuerySpec;
-import org.hibernate.sql.ast.tree.select.SelectClause;
-import org.hibernate.sql.ast.tree.select.SelectStatement;
-import org.hibernate.sql.ast.tree.select.SortSpecification;
-import org.hibernate.sql.ast.tree.update.Assignment;
-import org.hibernate.sql.ast.tree.update.UpdateStatement;
+import org.hibernate.query.sqm.tree.spi.expression.Conversion;
+import org.hibernate.sql.ast.spi.translation.Clause;
+import org.hibernate.dialect.sql.ast.spi.AbstractSqlAstTranslator;
+import org.hibernate.sql.ast.spi.query.MutationStatement;
+import org.hibernate.sql.ast.spi.Statement;
+import org.hibernate.sql.ast.spi.query.delete.DeleteStatement;
+import org.hibernate.sql.ast.spi.query.expression.*;
+import org.hibernate.sql.ast.spi.query.from.FromClause;
+import org.hibernate.sql.ast.spi.query.from.NamedTableReference;
+import org.hibernate.sql.ast.spi.query.from.TableGroup;
+import org.hibernate.sql.ast.spi.query.insert.InsertSelectStatement;
+import org.hibernate.sql.ast.spi.query.insert.Values;
+import org.hibernate.sql.ast.spi.query.predicate.BetweenPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.BooleanExpressionPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.ComparisonPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.ExistsPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.FilterPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.InArrayPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.InListPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.InSubQueryPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.LikePredicate;
+import org.hibernate.sql.ast.spi.query.predicate.NullnessPredicate;
+import org.hibernate.sql.ast.spi.query.predicate.Predicate;
+import org.hibernate.sql.ast.spi.query.predicate.ThruthnessPredicate;
+import org.hibernate.sql.ast.spi.query.select.QueryGroup;
+import org.hibernate.sql.ast.spi.query.select.QuerySpec;
+import org.hibernate.sql.ast.spi.query.select.SelectClause;
+import org.hibernate.sql.ast.spi.query.select.SelectStatement;
+import org.hibernate.sql.ast.spi.query.select.SortSpecification;
+import org.hibernate.sql.ast.spi.query.update.Assignment;
+import org.hibernate.sql.ast.spi.query.update.UpdateStatement;
 import org.hibernate.sql.exec.ExecutionException;
 import org.hibernate.sql.exec.internal.AbstractJdbcParameter;
 import org.hibernate.sql.exec.internal.JdbcParameterImpl;
@@ -98,17 +90,17 @@ import org.hibernate.sql.exec.spi.JdbcOperation;
 import org.hibernate.sql.exec.spi.JdbcParameterBinder;
 import org.hibernate.sql.exec.spi.JdbcParameterBinding;
 import org.hibernate.sql.exec.spi.JdbcParameterBindings;
-import org.hibernate.sql.model.MutationTarget;
-import org.hibernate.sql.model.ast.AbstractTableMutation;
-import org.hibernate.sql.model.ast.ColumnValueParameter;
-import org.hibernate.sql.model.ast.ColumnWriteFragment;
-import org.hibernate.sql.model.internal.OptionalTableUpdate;
-import org.hibernate.sql.model.internal.TableDeleteCustomSql;
-import org.hibernate.sql.model.internal.TableDeleteStandard;
-import org.hibernate.sql.model.internal.TableInsertCustomSql;
-import org.hibernate.sql.model.internal.TableInsertStandard;
-import org.hibernate.sql.model.internal.TableUpdateCustomSql;
-import org.hibernate.sql.model.internal.TableUpdateStandard;
+import org.hibernate.sql.model.LegacyMutationTarget;
+import org.hibernate.sql.ast.spi.model.AbstractTableMutation;
+import org.hibernate.sql.ast.spi.model.ColumnValueParameter;
+import org.hibernate.sql.ast.spi.model.ColumnWriteFragment;
+import org.hibernate.sql.ast.spi.model.OptionalTableUpdate;
+import org.hibernate.sql.ast.spi.model.TableDeleteCustomSql;
+import org.hibernate.sql.ast.spi.model.TableDeleteStandard;
+import org.hibernate.sql.ast.spi.model.TableInsertCustomSql;
+import org.hibernate.sql.ast.spi.model.TableInsertStandard;
+import org.hibernate.sql.ast.spi.model.TableUpdateCustomSql;
+import org.hibernate.sql.ast.spi.model.TableUpdateStandard;
 import org.hibernate.tool.schema.extract.spi.ColumnTypeInformation;
 import org.hibernate.type.BasicPluralType;
 import org.hibernate.type.BasicType;
@@ -128,7 +120,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -142,92 +133,132 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 	private static final String TRUE_CONSTANT = "1=1";
 
 	private MilvusStatementDefinition milvusStatement;
-	private List<String> databaseHints;
+	/**
+	 * Whether the JSON representation was written to the SQL buffer. After that, nothing may be appended anymore.
+	 */
+	private boolean sqlFinalized;
 
-	public MilvusSqlAstTranslator(SessionFactoryImplementor sessionFactory, Statement statement) {
-		super(sessionFactory, statement);
+	public MilvusSqlAstTranslator(SqlAstTranslationRequest<? extends Statement, T> request) {
+		super( request );
+	}
+
+	/**
+	 * The base translator reads the final statement from its SQL buffer,
+	 * so the JSON representation of the Milvus statement is written to it once the statement was built.
+	 */
+	private void finishStatement() {
+		final StringBuilder buffer = getSqlBuffer();
+		buffer.setLength( 0 );
+		buffer.append( MilvusJsonHelper.serializeDefinition( milvusStatement ) );
+		sqlFinalized = true;
 	}
 
 	@Override
-	public String getSql() {
-		return MilvusJsonHelper.serializeDefinition( milvusStatement );
-	}
-
-	@Override
-	public void renderNamedSetReturningFunction(String functionName, List<? extends SqlAstNode> sqlAstArguments, AnonymousTupleTableGroupProducer tupleType, String tableIdentifierVariable, SqlAstNodeRenderingMode argumentRenderingMode) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public T translate(JdbcParameterBindings jdbcParameterBindings, QueryOptions queryOptions) {
-		try {
-			databaseHints = queryOptions.getDatabaseHints();
-			return super.translate( jdbcParameterBindings, queryOptions );
+	public void appendSql(String fragment) {
+		if ( sqlFinalized ) {
+			throw new AssertionFailure( "SQL buffer was already finalized" );
 		}
-		finally {
-			databaseHints = null;
-		}
+		super.appendSql( fragment );
 	}
 
 	@Override
-	public void visitSelectStatement(SelectStatement statement) {
+	public void appendSql(char fragment) {
+		if ( sqlFinalized ) {
+			throw new AssertionFailure( "SQL buffer was already finalized" );
+		}
+		super.appendSql( fragment );
+	}
+
+	@Override
+	public void appendSql(int value) {
+		if ( sqlFinalized ) {
+			throw new AssertionFailure( "SQL buffer was already finalized" );
+		}
+		super.appendSql( value );
+	}
+
+	@Override
+	public void appendSql(long value) {
+		if ( sqlFinalized ) {
+			throw new AssertionFailure( "SQL buffer was already finalized" );
+		}
+		super.appendSql( value );
+	}
+
+	@Override
+	public void appendSql(double value) {
+		if ( sqlFinalized ) {
+			throw new AssertionFailure( "SQL buffer was already finalized" );
+		}
+		super.appendSql( value );
+	}
+
+	@Override
+	public void appendSql(float value) {
+		if ( sqlFinalized ) {
+			throw new AssertionFailure( "SQL buffer was already finalized" );
+		}
+		super.appendSql( value );
+	}
+
+	@Override
+	public void appendSql(boolean value) {
+		if ( sqlFinalized ) {
+			throw new AssertionFailure( "SQL buffer was already finalized" );
+		}
+		super.appendSql( value );
+	}
+
+	@Override
+	protected ReturningRenderingSupport getReturningRenderingSupport() {
+		// Milvus statements never render a returning clause, but the base translator needs a plan
+		// for inserts that return generated values. The rendered text is discarded.
+		return request -> request.returningColumns().isEmpty()
+				? new ReturningRenderingPlan.None()
+				: new ReturningRenderingPlan.Clause();
+	}
+
+	@Override
+	protected SetReturningFunctionRenderingSupport getSetReturningFunctionRenderingSupport() {
+		return request -> {
+			throw new UnsupportedOperationException();
+		};
+	}
+
+
+
+
+	@Override
+	protected void renderSelectStatement(SelectStatement statement) {
 		final QuerySpec querySpec = statement.getQuerySpec();
 		final List<Expression> groupByClauseExpressions = querySpec.getGroupByClauseExpressions();
+		if ( !statement.getCteStatements().isEmpty() ) {
+			throw new UnsupportedOperationException( "CTEs are not supported by Milvus" );
+		}
 		// To do group by, one must use a "search" instead of "query"
 		milvusStatement = groupByClauseExpressions != null && !groupByClauseExpressions.isEmpty()
 				? new MilvusSearch()
 				: new MilvusQuery();
-		super.visitSelectStatement( statement );
-		applyHints();
+		super.renderSelectStatement( statement );
+		finishStatement();
 	}
 
-	private void applyHints() {
-		if (databaseHints != null && !databaseHints.isEmpty()) {
-			for ( String databaseHint : databaseHints ) {
-				final int assignmentIndex = databaseHint.indexOf( '=' );
-				if ( assignmentIndex != -1 ) {
-					switch (databaseHint.substring( 0, assignmentIndex ) ) {
-						case MilvusDatabaseHints.CONSISTENCY_LEVEL -> applyConsistencyLevelHint( milvusStatement,
-								databaseHint.substring( assignmentIndex + 1 ) );
-					}
-				}
-			}
-		}
-	}
 
-	private void applyConsistencyLevelHint(MilvusStatementDefinition milvusStatement, String hintValue) {
-		final ConsistencyLevel consistencyLevel = ConsistencyLevel.valueOf( hintValue.toUpperCase( Locale.ROOT ) );
-		if ( milvusStatement instanceof AbstractMilvusQuery query ) {
-			query.setConsistencyLevel( consistencyLevel );
-		}
-	}
 
-	@Override
-	public void visitCteContainer(CteContainer cteContainer) {
-		if (!cteContainer.getCteObjects().isEmpty()) {
-			throw new UnsupportedOperationException( "CTEs are not supported by Milvus" );
-		}
-	}
 
-	@Override
-	public void visitDeleteStatement(DeleteStatement statement) {
-		milvusStatement = new MilvusDelete();
-		super.visitDeleteStatement( statement );
-		applyHints();
-	}
 
 	@Override
 	protected void visitDeleteStatementOnly(DeleteStatement statement) {
+		milvusStatement = new MilvusDelete();
 		renderDeleteClause( statement );
-		if ( !hasNonTrivialFromClause( statement.getFromClause() ) ) {
-			visitWhereClausePredicate( statement.getRestriction() );
+		if ( hasNonTrivialFromClause( statement.getFromClause() ) ) {
+			throw new UnsupportedOperationException( "Joins in deletes are not supported by Milvus" );
 		}
-		else {
-			visitWhereClausePredicate( determineWhereClauseRestrictionWithJoinEmulation( statement ) );
-		}
+		visitWhereClausePredicate( statement.getRestriction() );
 		if ( !statement.getReturningColumns().isEmpty() ) {
 			throw new UnsupportedOperationException( "Returning columns in deletes are not supported by Milvus" );
 		}
+		finishStatement();
 	}
 
 	@Override
@@ -242,21 +273,17 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		}
 	}
 
-	@Override
-	public void visitUpdateStatement(UpdateStatement statement) {
-		milvusStatement = new MilvusUpsert();
-		visitUpdateStatementOnly( statement );
-		applyHints();
-	}
 
 	@Override
 	protected void visitUpdateStatementOnly(UpdateStatement statement) {
+		milvusStatement = new MilvusUpsert();
 		renderUpdateClause( statement );
 		renderSetClause( statement.getAssignments() );
 		visitWhereClausePredicate( statement.getRestriction() );
 		if ( !statement.getReturningColumns().isEmpty() ) {
 			throw new UnsupportedOperationException( "Returning columns in updates are not supported by Milvus" );
 		}
+		finishStatement();
 	}
 
 	@Override
@@ -271,9 +298,8 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		}
 	}
 
-	@Override
-	public void visitInsertStatement(InsertSelectStatement statement) {
-		if (statement.getSourceSelectStatement() != null) {
+	private void buildInsertStatement(InsertSelectStatement statement) {
+		if ( statement.getSourceSelectStatement() != null ) {
 			throw new UnsupportedOperationException();
 		}
 		getCurrentClauseStack().push( Clause.INSERT );
@@ -281,7 +307,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 			MilvusInsert insert = new MilvusInsert();
 			milvusStatement = insert;
 
-			insert.setCollectionName( statement.getMutationTarget().getIdentifierTableName() );
+			insert.setCollectionName( ( (LegacyMutationTarget<?>) statement.getMutationTarget() ).getIdentifierTableName() );
 			registerAffectedTable( statement.getTargetTable() );
 
 			getCurrentClauseStack().push( Clause.VALUES );
@@ -305,26 +331,22 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 			finally {
 				getCurrentClauseStack().pop();
 			}
-
-			if ( !statement.getReturningColumns().isEmpty() ) {
-				visitReturningColumns( statement::getReturningColumns );
-			}
 		}
 		finally {
 			getCurrentClauseStack().pop();
 		}
-		applyHints();
+		finishStatement();
 	}
 
 	private void addDefaultEmbeddingDataIfNeeded(Map<String, MilvusTypedValue> valueMap, MutationStatement statement) {
-		addDefaultEmbeddingDataIfNeeded( valueMap, statement.getMutationTarget() );
+		addDefaultEmbeddingDataIfNeeded( valueMap, (LegacyMutationTarget<?>) statement.getMutationTarget() );
 	}
 
 	private void addDefaultEmbeddingDataIfNeeded(Map<String, MilvusTypedValue> valueMap, AbstractTableMutation<?> mutation) {
-		addDefaultEmbeddingDataIfNeeded( valueMap, mutation.getMutationTarget() );
+		addDefaultEmbeddingDataIfNeeded( valueMap, (LegacyMutationTarget<?>) mutation.getMutationTarget() );
 	}
 
-	private void addDefaultEmbeddingDataIfNeeded(Map<String, MilvusTypedValue> valueMap, MutationTarget<?> mutationTarget) {
+	private void addDefaultEmbeddingDataIfNeeded(Map<String, MilvusTypedValue> valueMap, LegacyMutationTarget<?> mutationTarget) {
 		if ( getDialect().getVersion().isBefore( 3 )
 			&& ((MilvusDialect) getDialect()).isAddMissingVectorField()
 			&& !hasVector( mutationTarget.getTargetPart() ) ) {
@@ -371,7 +393,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 			}
 
 			visitSelectClause( querySpec.getSelectClause() );
-			visitFromClause( querySpec.getFromClause() );
+			renderMilvusFromClause( querySpec.getFromClause() );
 			visitWhereClausePredicate( querySpec.getWhereClauseRestrictions() );
 			visitGroupByClause( querySpec );
 			visitOffsetFetchClause( querySpec );
@@ -451,7 +473,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 	private Predicate getAdditionalWherePredicate() {
 		// todo: temporary, until we add the getter to ORM
 		try {
-			Field additionalWherePredicate = AbstractSqlAstTranslator.class.getField( "additionalWherePredicate" );
+			Field additionalWherePredicate = AbstractSqlAstTranslator.class.getDeclaredField( "additionalWherePredicate" );
 			additionalWherePredicate.setAccessible( true );
 			return (Predicate) additionalWherePredicate.get( this );
 		}
@@ -587,6 +609,9 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 
 	@Override
 	protected void visitParameterAsParameter(JdbcParameter jdbcParameter) {
+		if ( sqlFinalized ) {
+			throw new AssertionFailure( "SQL buffer was already finalized" );
+		}
 		super.visitParameterAsParameter( jdbcParameter );
 		addParameterRegistration( getParameterBinders().size() );
 	}
@@ -927,7 +952,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		else if ( statement instanceof MutationStatement mutationStatement ) {
 			final String targetAlias = mutationStatement.getTargetTable().getIdentificationVariable();
 			primaryKey = targetAlias.equals( columnReference.getQualifier() )
-					? findPrimaryKey( mutationStatement.getMutationTarget().getTargetPart() )
+					? findPrimaryKey( ((LegacyMutationTarget<?>) mutationStatement.getMutationTarget()).getTargetPart() )
 					: null;
 		}
 		else {
@@ -946,7 +971,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 			targetPart = tableGroup.getModelPart();
 		}
 		else if ( statement instanceof MutationStatement mutationStatement ) {
-			targetPart = mutationStatement.getMutationTarget().getTargetPart();
+			targetPart = ((LegacyMutationTarget<?>) mutationStatement.getMutationTarget()).getTargetPart();
 		}
 		else {
 			throw new UnsupportedOperationException( "Unsupported statement type: " + statement );
@@ -1001,10 +1026,6 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		}
 	}
 
-	@Override
-	public void visitSortSpecification(SortSpecification sortSpecification) {
-		throw new UnsupportedOperationException();
-	}
 
 	@Override
 	protected void renderOffset(Expression offsetExpression, boolean renderOffsetRowsKeyword) {
@@ -1052,21 +1073,14 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 	}
 
 	@Override
-	public void visitSelectClause(SelectClause selectClause) {
-		getClauseStack().push( Clause.SELECT );
-
-		try {
-			if ( selectClause.isDistinct() ) {
-				throw new UnsupportedOperationException( "Distinct clause is not supported by Milvus" );
-			}
-			visitSqlSelections( selectClause );
-			renderVirtualSelections( selectClause );
-			// Clear out the commas
-			getSqlBuffer().setLength( 0 );
+	protected void renderSelectClause(SelectClause selectClause) {
+		if ( selectClause.isDistinct() ) {
+			throw new UnsupportedOperationException( "Distinct clause is not supported by Milvus" );
 		}
-		finally {
-			getClauseStack().pop();
-		}
+		renderSelectItems( selectClause );
+		renderVirtualSelections( selectClause );
+		// Clear out the commas
+		getSqlBuffer().setLength( 0 );
 	}
 
 	@Override
@@ -1549,31 +1563,34 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 			}
 		}
 	}
-	@Override
-	public void visitFromClause(FromClause fromClause) {
+	private void renderMilvusFromClause(FromClause fromClause) {
 		if ( fromClause == null || fromClause.getRoots().isEmpty() ) {
 			throw new UnsupportedOperationException( "Milvus doesn't support an empty from clause" );
 		}
-		else {
-			renderFromClauseSpaces( fromClause );
+		if ( fromClause.getRoots().size() > 1 ) {
+			throw new UnsupportedOperationException( "Milvus doesn't support multiple from clause items" );
 		}
-	}
-
-	@Override
-	protected boolean renderNamedTableReference(NamedTableReference tableReference, LockMode lockMode) {
+		final TableGroup root = fromClause.getRoots().get( 0 );
+		if ( root.hasRealJoins() ) {
+			throw new UnsupportedOperationException( "Milvus doesn't support joins" );
+		}
+		if ( !( root.getPrimaryTableReference() instanceof NamedTableReference tableReference ) ) {
+			throw new UnsupportedOperationException( "Milvus only supports named table references" );
+		}
 		final AbstractMilvusQuery milvusQuery = (AbstractMilvusQuery) milvusStatement;
-		if ( milvusQuery.getCollectionName() != null ) {
-			if ( milvusQuery.getCollectionName().equals( tableReference.getTableId() ) ) {
-				throw new UnsupportedOperationException( "Milvus doesn't support multiple from clause items" );
-			}
-		}
 		milvusQuery.setCollectionName( tableReference.getTableId() );
 		registerAffectedTable( tableReference );
-		return false;
 	}
+
 
 	@Override
 	protected void renderDmlTargetTableExpression(NamedTableReference tableReference) {
+		if ( getStatementStack().getCurrent() instanceof InsertSelectStatement insertStatement ) {
+			// The base translator offers no hook to render inserts, but it renders the target first
+			// and ignores everything that is appended after the statement was finished.
+			buildInsertStatement( insertStatement );
+			return;
+		}
 		final AbstractMilvusCollectionStatement milvusQuery = (AbstractMilvusCollectionStatement) milvusStatement;
 		milvusQuery.setCollectionName( tableReference.getTableId() );
 		registerAffectedTable( tableReference );
@@ -1585,25 +1602,9 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		return null;
 	}
 
-	@Override
-	public void visitValuesTableReference(ValuesTableReference tableReference) {
-		throw new UnsupportedOperationException();
-	}
 
-	@Override
-	public void visitQueryPartTableReference(QueryPartTableReference tableReference) {
-		throw new UnsupportedOperationException();
-	}
 
-	@Override
-	public void visitFunctionTableReference(FunctionTableReference tableReference) {
-		throw new UnsupportedOperationException();
-	}
 
-	@Override
-	public void visitTableReferenceJoin(TableReferenceJoin tableReferenceJoin) {
-		throw new UnsupportedOperationException();
-	}
 
 	@Override
 	public void visitNestedColumnReference(NestedColumnReference nestedColumnReference) {
@@ -1761,7 +1762,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 	}
 
 	@Override
-	public void visitStandardTableInsert(TableInsertStandard tableInsert) {
+	protected void renderStandardTableInsert(TableInsertStandard tableInsert) {
 		getCurrentClauseStack().push( Clause.INSERT );
 		try {
 			MilvusInsert insert = new MilvusInsert();
@@ -1798,15 +1799,11 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 			finally {
 				getCurrentClauseStack().pop();
 			}
-
-			if ( tableInsert.getNumberOfReturningColumns() > 0 ) {
-				visitReturningColumns( tableInsert::getReturningColumns );
-			}
 		}
 		finally {
 			getCurrentClauseStack().pop();
 		}
-		applyHints();
+		finishStatement();
 	}
 
 	private boolean hasVector(ModelPartContainer modelPartContainer) {
@@ -1849,8 +1846,11 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public void visitStandardTableDelete(TableDeleteStandard tableDelete) {
+	/**
+	 * The base translator offers no hook to render standard table deletes,
+	 * which is why {@link MilvusTableDelete} dispatches directly to this method.
+	 */
+	void renderStandardTableDelete(TableDeleteStandard tableDelete) {
 		if ( tableDelete.getNumberOfOptimisticLockBindings() > 0 ) {
 			throw new UnsupportedOperationException( "Optimistic locking not supported on Milvus" );
 		}
@@ -1898,7 +1898,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		finally {
 			getCurrentClauseStack().pop();
 		}
-		applyHints();
+		finishStatement();
 	}
 
 	@Override
@@ -1907,14 +1907,14 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 	}
 
 	@Override
-	public void visitStandardTableUpdate(TableUpdateStandard tableUpdate) {
+	protected void renderStandardTableUpdate(TableUpdateStandard tableUpdate) {
 		if ( tableUpdate.getNumberOfOptimisticLockBindings() > 0 ) {
 			throw new UnsupportedOperationException( "Optimistic locking not supported on Milvus" );
 		}
-		if ( tableUpdate.getWhereFragment() != null ) {
+		else if ( tableUpdate.getWhereFragment() != null ) {
 			throw new UnsupportedOperationException( "Non-id predicates are not supported for updates on Milvus" );
 		}
-		if ( tableUpdate.getNumberOfReturningColumns() > 0 ) {
+		else if ( tableUpdate.getNumberOfReturningColumns() > 0 ) {
 			throw new UnsupportedOperationException( "Returning clause is not supported for updates on Milvus" );
 		}
 
@@ -1953,7 +1953,7 @@ public class MilvusSqlAstTranslator<T extends JdbcOperation> extends AbstractSql
 		finally {
 			getCurrentClauseStack().pop();
 		}
-		applyHints();
+		finishStatement();
 	}
 
 	@Override

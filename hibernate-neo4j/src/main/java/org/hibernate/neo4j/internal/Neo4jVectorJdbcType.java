@@ -9,7 +9,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.Size;
 import org.hibernate.metamodel.mapping.JdbcMapping;
-import org.hibernate.sql.ast.spi.SqlAppender;
+import org.hibernate.sql.spi.SqlAppender;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.type.descriptor.java.BasicPluralJavaType;

@@ -7,7 +7,7 @@ package org.hibernate.neo4j.internal;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.dialect.unique.AlterTableUniqueDelegate;
+import org.hibernate.dialect.unique.internal.AlterTableUniqueDelegate;
 import org.hibernate.mapping.Column;
 import org.hibernate.mapping.UniqueKey;
 

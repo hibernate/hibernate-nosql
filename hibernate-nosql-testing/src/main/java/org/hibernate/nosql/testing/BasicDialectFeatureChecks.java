@@ -2,7 +2,7 @@ package org.hibernate.nosql.testing;
 
 import org.hibernate.dialect.Dialect;
 import org.hibernate.milvus.MilvusDialect;
-import org.hibernate.sql.ast.spi.StringBuilderSqlAppender;
+import org.hibernate.sql.spi.StringBuilderSqlAppender;
 import org.hibernate.testing.orm.junit.DialectFeatureCheck;
 
 import java.util.UUID;

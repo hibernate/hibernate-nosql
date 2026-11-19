@@ -4,6 +4,7 @@
  */
 package org.hibernate.milvus.internal.collection;
 
+import java.util.Map;
 import org.hibernate.collection.spi.AbstractMapSemantics;
 import org.hibernate.collection.spi.CollectionInitializerProducer;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -87,5 +88,18 @@ public class MilvusSortedMapSemantics<K, V> extends AbstractMapSemantics<SortedM
 			CollectionPersister collectionDescriptor,
 			SharedSessionContractImplementor session) {
 		return new PersistentSortedMap<>( session, rawCollection );
+	}
+
+	@Override
+	@SuppressWarnings({"unchecked", "rawtypes"})
+	public <KK, VV> SortedMap<KK, VV> instantiateWithElements(
+			int anticipatedSize,
+			CollectionPersister collectionDescriptor,
+			Map<? extends KK, ? extends VV> entries) {
+		final SortedMap<KK, VV> map = new TreeMap<>(
+				collectionDescriptor == null ? null : (Comparator) collectionDescriptor.getSortingComparator()
+		);
+		map.putAll( entries );
+		return map;
 	}
 }

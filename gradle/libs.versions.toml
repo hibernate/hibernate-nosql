@@ -1,7 +1,7 @@
 [versions]
 
 # Main Libs
-hibernate = "7.4.16.Final"
+hibernate = "8.0.0.CR1"
 jbossLoggingTool = "3.0.4.Final"
 jandex = "3.6.1"
 gson = "2.15.0"

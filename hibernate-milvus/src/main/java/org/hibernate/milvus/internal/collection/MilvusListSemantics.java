@@ -4,6 +4,8 @@
  */
 package org.hibernate.milvus.internal.collection;
 
+import java.util.Set;
+import java.util.LinkedHashSet;
 import org.hibernate.collection.spi.CollectionInitializerProducer;
 import org.hibernate.collection.spi.CollectionSemantics;
 import org.hibernate.collection.spi.PersistentCollection;
@@ -97,5 +99,39 @@ public class MilvusListSemantics<E> implements CollectionSemantics<List<E>, E> {
 			CollectionPersister collectionDescriptor,
 			SharedSessionContractImplementor session) {
 		return new PersistentList<>( session, rawCollection );
+	}
+
+	@Override
+	public Set<?> copyPart(
+			Object rawCollection,
+			CollectionPersister collectionDescriptor,
+			CollectionPart.Nature partNature) {
+		final LinkedHashSet<Object> copy = new LinkedHashSet<>();
+		if ( partNature == CollectionPart.Nature.INDEX ) {
+			final int listIndexBase =
+					collectionDescriptor.getAttributeMapping()
+							.getIndexMetadata().getListIndexBase();
+			for ( int i = 0; i < collectionSize( rawCollection ); i++ ) {
+				copy.add( listIndexBase + i );
+			}
+		}
+		else if ( rawCollection instanceof List<?> list ) {
+			copy.addAll( list );
+		}
+		return copy;
+	}
+
+	@Override
+	public Object copy(
+			Object rawCollection,
+			CollectionPersister collectionDescriptor) {
+		return rawCollection instanceof List<?> list
+				? instantiateWithElements( collectionSize( rawCollection ), collectionDescriptor, list )
+				: rawCollection;
+	}
+
+	@Override
+	public int collectionSize(Object rawCollection) {
+		return rawCollection instanceof List<?> list ? list.size() : 0;
 	}
 }

@@ -46,15 +46,6 @@ public class MilvusBinaryVectorJdbcType extends ArrayJdbcType {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public <T> JavaType<T> getJdbcRecommendedJavaTypeMapping(
-			Integer precision,
-			Integer scale,
-			TypeConfiguration typeConfiguration) {
-		return (JavaType<T>) typeConfiguration.getJavaTypeRegistry().resolveDescriptor( byte[].class );
-	}
-
-	@Override
 	public <T> JdbcLiteralFormatter<T> getJdbcLiteralFormatter(JavaType<T> javaTypeDescriptor) {
 		final JavaType<T> elementJavaType;
 		if ( javaTypeDescriptor instanceof PrimitiveByteArrayJavaType ) {

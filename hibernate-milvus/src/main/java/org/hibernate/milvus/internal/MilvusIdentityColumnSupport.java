@@ -5,10 +5,10 @@
 package org.hibernate.milvus.internal;
 
 import org.hibernate.MappingException;
-import org.hibernate.dialect.identity.IdentityColumnSupportImpl;
+import org.hibernate.dialect.identity.spi.IdentityColumnSupportBase;
 
 
-public class MilvusIdentityColumnSupport extends IdentityColumnSupportImpl {
+public class MilvusIdentityColumnSupport extends IdentityColumnSupportBase {
 
 	public static final MilvusIdentityColumnSupport INSTANCE = new MilvusIdentityColumnSupport();
 
